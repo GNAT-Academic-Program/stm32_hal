@@ -1,0 +1,17 @@
+name = "stm32_hal"
+description = "Shiny new project"
+version = "0.1.0-dev"
+
+authors = ["Olivier Henley"]
+maintainers = ["Olivier Henley <olivier.henley@gmail.com>"]
+maintainers-logins = ["ohenley"]
+
+[[depends-on]]
+cortex_m = "0.5.0"
+hal = "~0.3.0"
+
+[configuration.variables]
+device = { type = "Enum", values = ["stm32f746", "stm32f429"], default = "stm32f746" }
+
+[configuration.values]
+cortex_m.core = "m7f"
