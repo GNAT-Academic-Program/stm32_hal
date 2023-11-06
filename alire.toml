@@ -1,17 +1,36 @@
-name = "stm32_hal"
+authors = [
+    "Olivier Henley",
+]
 description = "Shiny new project"
+maintainers = [
+    "Olivier Henley <olivier.henley@gmail.com>",
+]
+maintainers-logins = [
+    "ohenley",
+]
+name = "stm32_hal"
 version = "0.1.0-dev"
 
-authors = ["Olivier Henley"]
-maintainers = ["Olivier Henley <olivier.henley@gmail.com>"]
-maintainers-logins = ["ohenley"]
+[configuration]
+auto_gpr_with = true
+disabled = false
+generate_ada = true
+generate_c = true
+generate_gpr = true
+output_dir = "config"
+
+[configuration.variables]
+[configuration.variables.device]
+default = "stm32f746"
+type = "Enum"
+values = [
+    "stm32f746",
+    "stm32f429",
+]
+
+# [configuration.values]
+# cortex_m.core = "m7f"
 
 [[depends-on]]
 cortex_m = "0.5.0"
 hal = "~0.3.0"
-
-[configuration.variables]
-device = { type = "Enum", values = ["stm32f746", "stm32f429"], default = "stm32f746" }
-
-#[configuration.values]
-#cortex_m.core = "m7f"

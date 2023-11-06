@@ -1,0 +1,267 @@
+------------------------------------------------------------------------------
+--                                                                          --
+--                    Copyright (C) 2015, AdaCore                           --
+--                                                                          --
+--  Redistribution and use in source and binary forms, with or without      --
+--  modification, are permitted provided that the following conditions are  --
+--  met:                                                                    --
+--     1. Redistributions of source code must retain the above copyright    --
+--        notice, this list of conditions and the following disclaimer.     --
+--     2. Redistributions in binary form must reproduce the above copyright --
+--        notice, this list of conditions and the following disclaimer in   --
+--        the documentation and/or other materials provided with the        --
+--        distribution.                                                     --
+--     3. Neither the name of STMicroelectronics nor the names of its       --
+--        contributors may be used to endorse or promote products derived   --
+--        from this software without specific prior written permission.     --
+--                                                                          --
+--   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS    --
+--   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT      --
+--   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR  --
+--   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT   --
+--   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, --
+--   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT       --
+--   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,  --
+--   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY  --
+--   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT    --
+--   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  --
+--   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.   --
+--                                                                          --
+--                                                                          --
+--  This file is based on:                                                  --
+--                                                                          --
+--   @file    stm32f4xx_hal_spi.h                                           --
+--   @author  MCD Application Team                                          --
+--   @version V1.1.0                                                        --
+--   @date    19-June-2014                                                  --
+--   @brief   Header file of SPI HAL module.                                --
+--                                                                          --
+--   COPYRIGHT(c) 2014 STMicroelectronics                                   --
+------------------------------------------------------------------------------
+
+--  This file provides definitions for the STM32F4 (ARM Cortex M4F
+--  from ST Microelectronics) Universal Syncrhonous/Asyncrhonous
+--  Recieve/Transmit (USART) facility.
+
+private with STM32_SVD.USART;
+with HAL.UART;
+with System;
+
+package STM32.USART is
+
+   type Internal_USART_Port is private;
+
+   type USART_Port (Periph : not null access Internal_USART_Port) is
+      limited new HAL.UART.UART_Port with private;
+
+   type USART_Data_Direction is
+     (RX,
+      TX,
+      RX_TX);
+
+   type USART_Mode is
+     (Syncrhonous,
+      Asyncrhonous);
+
+   type USART_Flow_Control is
+     (No_Flow_Control,
+      RTS_Flow_Control,
+      CTS_Flow_Control,
+      RTS_CTS_Flow_Control);
+
+   type USART_Stop_Bits is
+     (Stopbits_1,
+      Stopbits_2) with Size => 2;
+
+   for USART_Stop_Bits use
+     (Stopbits_1 => 0,
+      Stopbits_2 => 2#10#);
+
+   type USART_Parity is
+     (No_Parity,
+      Even_Parity,
+      Odd_Parity);
+
+   type USART_Oversampling is
+     (Oversampling_16x,
+      Oversampling_8x);
+
+   type USART_Baud_Rate_Prescaler is
+     (BRP_2, BRP_4, BRP_8, BRP_16, BRP_32, BRP_64, BRP_128, BRP_256);
+
+   type USART_Configuration is record
+      Direction           : USART_Data_Direction    := RX_TX;
+      Mode                : USART_Mode              := Asyncrhonous;
+      Data_Size           : HAL.UART.UART_Data_Size := HAL.UART.Data_Size_8b;
+      Flow_Control        : USART_Flow_Control      := No_Flow_Control;
+      Stop_Bits           : USART_Stop_Bits         := Stopbits_1;
+      Parity              : USART_Parity            := No_Parity;
+      Oversampling        : USART_Oversampling      := Oversampling_16x;
+      Baud_Rate           : UInt32;
+      CRC_Poly            : UInt16 := 0;
+   end record;
+
+   procedure Configure (This : in out USART_Port; Conf : USART_Configuration);
+
+   procedure Enable (This : in out USART_Port);
+
+   procedure Disable (This : in out USART_Port);
+
+   function Enabled (This : USART_Port) return Boolean;
+
+   procedure Send (This : in out USART_Port; Data : UInt16);
+
+   function Data (This : USART_Port) return UInt16
+     with Inline;
+
+   procedure Send (This : in out USART_Port; Data : UInt8);
+
+   function Data (This : USART_Port) return UInt8
+     with Inline;
+
+   function Is_Busy (This : USART_Port) return Boolean
+     with Inline;
+
+   function Rx_Is_Empty (This : USART_Port) return Boolean
+     with Inline;
+
+   function Tx_Is_Empty (This : USART_Port) return Boolean
+     with Inline;
+
+   function Busy (This : USART_Port) return Boolean
+     with Inline;
+
+   function Channel_Side_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function Underrun_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function CRC_Error_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function Mode_Fault_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function Overrun_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function Frame_Fmt_Error_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   procedure Clear_Overrun (This : USART_Port);
+
+   procedure Reset_CRC (This : in out USART_Port);
+
+   function CRC_Enabled (This : USART_Port) return Boolean;
+
+   function Is_Data_Frame_16bit (This : USART_Port) return Boolean;
+
+   function Current_Mode (This : USART_Port) return USART_Mode;
+
+   function Current_Data_Direction (This : USART_Port) return
+     USART_Data_Direction;
+
+   --  The following I/O routines implement the higher level functionality for
+   --  CRC and data direction, among others.
+
+   type UInt8_Buffer is array (Natural range <>) of UInt8
+     with Alignment => 2;
+   --  The alignment is set to 2 because we treat component pairs as half_word
+   --  values when sending/receiving in 16-bit mode.
+
+   --  Blocking
+
+   overriding
+   function Data_Size (This : USART_Port) return HAL.UART.UART_Data_Size;
+
+   overriding
+   procedure Transmit
+     (This   : in out USART_Port;
+      Data   : HAL.UART.UART_Data_8b;
+      Status : out HAL.UART.UART_Status;
+      Timeout : Natural := 1000);
+
+   overriding
+   procedure Transmit
+     (This   : in out USART_Port;
+      Data   : HAL.UART.UART_Data_9b;
+      Status : out HAL.UART.UART_Status;
+      Timeout : Natural := 1000);
+
+   procedure Transmit
+     (This     : in out USART_Port;
+      Outgoing : UInt8);
+
+   overriding
+   procedure Receive
+     (This    : in out USART_Port;
+      Data    : out HAL.UART.UART_Data_8b;
+      Status  : out HAL.UART.UART_Status;
+      Timeout : Natural := 1000);
+
+   overriding
+   procedure Receive
+     (This    : in out USART_Port;
+      Data    : out HAL.UART.UART_Data_9b;
+      Status  : out HAL.UART.UART_Status;
+      Timeout : Natural := 1000);
+
+   procedure Receive
+     (This     : in out USART_Port;
+      Incoming : out UInt8);
+
+  --   procedure Transmit_Receive
+  --     (This      : in out USART_Port;
+  --      Outgoing  : UInt8_Buffer;
+  --      Incoming  : out UInt8_Buffer;
+  --      Size      : Positive);
+
+  --   procedure Transmit_Receive
+  --     (This      : in out USART_Port;
+  --      Outgoing  : UInt8;
+  --      Incoming  : out UInt8);
+
+   --  TODO: add the other higher-level HAL routines for interrupts and DMA
+
+   function Data_Register_Address
+     (This : USART_Port)
+      return System.Address;
+   --  For DMA transfer
+
+private
+
+   type Internal_USART_Port is new STM32_SVD.USART.USART_Peripheral;
+
+   type USART_Port (Periph : not null access Internal_USART_Port) is
+     limited new HAL.UART.UART_Port with null record;
+
+   procedure Send_Receive_9bit_Mode
+     (This     : in out USART_Port;
+      Outgoing : UInt8_Buffer;
+      Incoming : out UInt8_Buffer;
+      Size     : Positive);
+
+   procedure Send_Receive_8bit_Mode
+     (This     : in out USART_Port;
+      Outgoing : UInt8_Buffer;
+      Incoming : out UInt8_Buffer;
+      Size     : Positive);
+
+   procedure Send_9bit_Mode
+     (This     : in out USART_Port;
+      Outgoing : HAL.UART.UART_Data_9b);
+
+   procedure Send_8bit_Mode
+     (This     : in out USART_Port;
+      Outgoing : HAL.UART.UART_Data_8b);
+
+   procedure Receive_9bit_Mode
+     (This     : in out USART_Port;
+      Incoming : out HAL.UART.UART_Data_9b);
+
+   procedure Receive_8bit_Mode
+     (This     : in out USART_Port;
+      Incoming : out HAL.UART.UART_Data_8b);
+
+end STM32.USART;

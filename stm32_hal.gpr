@@ -32,6 +32,7 @@ project Stm32_Hal is
                           "src/drivers/rtc/v1/",
                           "src/drivers/spi/v1/",
                           "src/drivers/timers/v1/",
+                          "src/drivers/usart/v1/",
                           "src/drivers/syscfg/v1/",
                           "src/drivers/exti/v1/");
    end case;
