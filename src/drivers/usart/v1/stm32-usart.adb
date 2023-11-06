@@ -275,12 +275,13 @@ package body STM32.USART is
    -- Current_Mode --
    ------------------
 
-   function Current_Mode (This : SPI_Port) return SPI_Mode is
+   --I changed this to sync and async mode if it's determined externally just remove this
+   function Current_Mode (This : USART_Port) return USART_Mode is
    begin
-      if This.Periph.CR1.MSTR and This.Periph.CR1.SSI then
-         return Master;
+      if This.Periph.CR1.Syncrhonous and This.Periph.CR1.SSI then
+         return Syncrhonous;
       else
-         return Slave;
+         return Asyncrhonous;
       end if;
    end Current_Mode;
 
@@ -288,21 +289,17 @@ package body STM32.USART is
    -- Current_Data_Direction --
    ----------------------------
 
-   function Current_Data_Direction (This : SPI_Port) return SPI_Data_Direction
+   function Current_Data_Direction (This : USART_Port) return USART_Data_Direction
    is
    begin
-      if not This.Periph.CR1.BIDIMODE then
-         if not This.Periph.CR1.RXONLY then
-            return D2Lines_FullDuplex;
+      if This.Periph.CR1.RE then
+         if THIS.Periph.CR1.TE then
+            return RX_TX;
          else
-            return D2Lines_RxOnly;
+            return RX;
          end if;
       else
-         if not This.Periph.CR1.BIDIOE then
-            return D1Line_Rx;
-         else
-            return D1Line_Tx;
-         end if;
+         return TX;
       end if;
    end Current_Data_Direction;
 
@@ -310,42 +307,42 @@ package body STM32.USART is
    -- CRC_Enabled --
    -----------------
 
-   function CRC_Enabled (This : SPI_Port) return Boolean is
+   function CRC_Enabled (This : USART_Port) return Boolean is
       (This.Periph.CR1.CRCEN);
 
    ----------------------------
    -- Channel_Side_Indicated --
    ----------------------------
 
-   function Channel_Side_Indicated (This : SPI_Port) return Boolean is
+   function Channel_Side_Indicated (This : USART_Port) return Boolean is
      (This.Periph.ISR.CHSIDE);
 
    ------------------------
    -- Underrun_Indicated --
    ------------------------
 
-   function Underrun_Indicated (This : SPI_Port) return Boolean is
+   function Underrun_Indicated (This : USART_Port) return Boolean is
      (This.Periph.ISR.UDR);
 
    -------------------------
    -- CRC_Error_Indicated --
    -------------------------
 
-   function CRC_Error_Indicated (This : SPI_Port) return Boolean is
+   function CRC_Error_Indicated (This : USART_Port) return Boolean is
       (This.Periph.ISR.CRCERR);
 
    --------------------------
    -- Mode_Fault_Indicated --
    --------------------------
 
-   function Mode_Fault_Indicated (This : SPI_Port) return Boolean is
+   function Mode_Fault_Indicated (This : USART_Port) return Boolean is
      (This.Periph.ISR.MODF);
 
    -----------------------
    -- Overrun_Indicated --
    -----------------------
 
-   function Overrun_Indicated (This : SPI_Port) return Boolean is
+   function Overrun_Indicated (This : USART_Port) return Boolean is
       (This.Periph.ISR.OVR);
 
    -------------------------------
@@ -373,7 +370,7 @@ package body STM32.USART is
    -- Reset_CRC --
    ---------------
 
-   procedure Reset_CRC (This : in out SPI_Port) is
+   procedure Reset_CRC (This : in out USART_Port) is
    begin
       This.Periph.CR1.CRCEN := False;
       This.Periph.CR1.CRCEN := True;
@@ -612,7 +609,7 @@ package body STM32.USART is
    -------------
 
    procedure Receive
-     (This     : in out SPI_Port;
+     (This     : in out USART_Port;
       Incoming : out UInt8)
    is
    begin
