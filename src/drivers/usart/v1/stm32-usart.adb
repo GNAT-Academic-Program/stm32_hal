@@ -41,7 +41,9 @@
 
 with Ada.Unchecked_Conversion;
 
+with System; use System;
 with STM32_SVD.USART; use STM32_SVD.USART;
+with STM32.Device; use STM32.Device;
 
 package body STM32.USART is
 
@@ -71,7 +73,9 @@ package body STM32.USART is
 
    function APB_Clock (This : in out USART_Port) return UInt32 is
    begin
-      if This.Periph = USART1_Periph or This.Periph = USART6_Periph
+      if This.Periph.all'Address = USART1_Periph'Address
+        or else
+         This.Periph.all'Address = USART6_Periph'Address
       then
          return Clocks.PCLK2;
       else
@@ -83,18 +87,19 @@ package body STM32.USART is
    -- Configure --
    ---------------
 
-   procedure Configure (This : in out USART_Port; Conf : USART_Configuration) is
-      Clock       : constant UInt32 := APB_Clock (This);
-      Int_Scale   : constant UInt32 := (if Conf.Oversampling = Oversampling_8x then 2 else 4);
-      Int_Divider : constant UInt32 := (25 * Clock) / (Int_Scale * Conf.Baud_Rate);
+   procedure Configure (
+      This : in out USART_Port;
+      Conf : USART_Configuration
+   ) is
+      Clock        : constant UInt32 := APB_Clock (This);
+      Int_Scale    : constant UInt32 := (
+         if Conf.Oversampling = Oversampling_8x then 2 else 4
+      );
+      Int_Divider  : constant UInt32 := (
+         (25 * Clock) / (Int_Scale * Conf.Baud_Rate)
+      );
       Frac_Divider : constant UInt32 := Int_Divider rem 100;
    begin
-      case Conf.Mode is
-         when Syncrhonous =>
-            null; -- TODO: Implement difference for this, or remove if determined externally
-         when Asyncrhonous =>
-            null;
-      end case;
 
       case Conf.Direction is
          when RX_TX =>
@@ -147,27 +152,12 @@ package body STM32.USART is
       This.Periph.BRR.DIV_Mantissa :=
          BRR_DIV_Mantissa_Field (Int_Divider / 100);
 
-      
-      This.Perioh.CR1.M0    := False; -- If true, data_size is 7 bits.
+      This.Periph.CR1.M0    := False; -- If true, data_size is 7 bits.
       This.Periph.CR1.M1    := Conf.Data_Size = HAL.UART.Data_Size_9b;
+      -- Interrupt CR1 also contains interrupt configuration
 
-
-      -- Interrupt configuration also exists in CR1
-      
-
-      --  This.Periph.CR1.DFF      := Conf.Data_Size = HAL.SPI.Data_Size_16b;
-      --  This.Periph.CR1.CPOL     := Conf.Clock_Polarity = High;
-      --  This.Periph.CR1.CPHA     := Conf.Clock_Phase = P2Edge;
-      --  This.Periph.CR1.SSM      := Conf.Slave_Management = Software_Managed;
-      --  This.Periph.CR1.BR       := Baud_Rate_Value (Conf.Baud_Rate_Prescaler);
-      --  This.Periph.CR1.LSBFIRST := Conf.First_Bit = LSB;
-
+      This.Periph.CR2.CLKEN := Conf.Mode = Syncrhonous;
       This.Periph.CR2.STOP := Conf.Stop_Bits'Enum_Rep;
-
-      --  Activate the SPI mode (Reset I2SMOD bit in I2SCFGR register)
-      --  This.Periph.I2SCFGR.I2SMOD := False;
-
-      This.Periph.CRCPR.CRCPOLY := Conf.CRC_Poly;
    end Configure;
 
    ------------
@@ -240,7 +230,7 @@ package body STM32.USART is
    function Is_Busy (This : USART_Port) return Boolean is
    begin
       return (Rx_Is_Empty (This)
-              and then not Tx_Is_Empty (This))
+              and not Transmission_Is_Complete (This))
         or else Busy (This);
    end Is_Busy;
 
@@ -252,6 +242,15 @@ package body STM32.USART is
    begin
       return This.Periph.ISR.TXE;
    end Tx_Is_Empty;
+
+   -----------------
+   -- Tx_Is_Empty --
+   -----------------
+
+   function Tx_Is_Complete (This : USART_Port) return Boolean is
+   begin
+      return This.Periph.ISR.TC;
+   end Tx_Is_Complete;
 
    -----------------
    -- Rx_Is_Empty --
@@ -275,10 +274,9 @@ package body STM32.USART is
    -- Current_Mode --
    ------------------
 
-   --I changed this to sync and async mode if it's determined externally just remove this
    function Current_Mode (This : USART_Port) return USART_Mode is
    begin
-      if This.Periph.CR1.Syncrhonous and This.Periph.CR1.SSI then
+      if This.Periph.CR2.CLKEN then
          return Syncrhonous;
       else
          return Asyncrhonous;
@@ -292,108 +290,154 @@ package body STM32.USART is
    function Current_Data_Direction (This : USART_Port) return USART_Data_Direction
    is
    begin
-      if This.Periph.CR1.RE then
-         if THIS.Periph.CR1.TE then
-            return RX_TX;
-         else
-            return RX;
-         end if;
-      else
+      if This.Periph.CR1.TE and This.Periph.CR1.RE then
+         return RX_TX;
+      elsif This.Periph.CR1.TE then
          return TX;
+      else
+         return RX;
       end if;
    end Current_Data_Direction;
 
-   -----------------
-   -- CRC_Enabled --
-   -----------------
-
-   function CRC_Enabled (This : USART_Port) return Boolean is
-      (This.Periph.CR1.CRCEN);
-
    ----------------------------
-   -- Channel_Side_Indicated --
+   -- Parity_Error_Indicated --
    ----------------------------
 
-   function Channel_Side_Indicated (This : USART_Port) return Boolean is
-     (This.Periph.ISR.CHSIDE);
+   function Parity_Error_Indicated (This : USART_Port) return Boolean is
+     (This.Periph.ISR.PE);
 
-   ------------------------
-   -- Underrun_Indicated --
-   ------------------------
+   -----------------------------
+   -- Framing_Error_Indicated --
+   -----------------------------
 
-   function Underrun_Indicated (This : USART_Port) return Boolean is
-     (This.Periph.ISR.UDR);
+   function Framing_Error_Indicated (This : USART_Port) return Boolean is
+     (This.Periph.ISR.FE);
 
-   -------------------------
-   -- CRC_Error_Indicated --
-   -------------------------
+   ------------------------------
+   -- Start_Bit_Noise_Detected --
+   ------------------------------
 
-   function CRC_Error_Indicated (This : USART_Port) return Boolean is
-      (This.Periph.ISR.CRCERR);
-
-   --------------------------
-   -- Mode_Fault_Indicated --
-   --------------------------
-
-   function Mode_Fault_Indicated (This : USART_Port) return Boolean is
-     (This.Periph.ISR.MODF);
+   function Start_Bit_Noise_Detected (This : USART_Port) return Boolean is
+      (This.Periph.ISR.NF);
 
    -----------------------
    -- Overrun_Indicated --
    -----------------------
 
    function Overrun_Indicated (This : USART_Port) return Boolean is
-      (This.Periph.ISR.OVR);
+      (This.Periph.ISR.ORE);
+
+   -------------------------
+   -- Idle_Line_Indicated --
+   -------------------------
+
+   function Idle_Line_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.IDLE);
+
+   ------------------------
+   -- LIN_Break_Detected --
+   ------------------------
+
+   function LIN_Break_Detected (This : USART_Port) return Boolean is
+      (This.Periph.ISR.LBDF);
+
+   -----------------------------
+   -- CTS_Interrupt_Indicated --
+   -----------------------------
+
+   function CTS_Interrupt_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.CTSIF);
+
+   -------------------
+   -- CTS_Indicated --
+   -------------------
+
+   function CTS_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.CTS);
+
+   --------------------------------
+   -- Reciever_Timeout_Indicated --
+   --------------------------------
+
+   function Reciever_Timeout_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.RTOF);
+
+   ----------------------------
+   -- End_Of_Block_Indicated --
+   ----------------------------
+
+   function End_Of_Block_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.EOBF);
+
+   ---------------------------
+   -- Auto_Baud_Rate_Failed --
+   ---------------------------
+
+   function Auto_Baud_Rate_Failed (This : USART_Port) return Boolean is
+      (This.Periph.ISR.ABRE);
 
    -------------------------------
-   -- Frame_Fmt_Error_Indicated --
+   -- Auto_Baud_Rate_Successful --
    -------------------------------
 
-   function Frame_Fmt_Error_Indicated (This : SPI_Port) return Boolean is
-   begin
-      return This.Periph.ISR.TIFRFE;
-   end Frame_Fmt_Error_Indicated;
+   function Auto_Baud_Rate_Successful (This : USART_Port) return Boolean is
+      (This.Periph.ISR.ABRF);
+
+   -------------------------------
+   -- Character_Match_Indicated --
+   -------------------------------
+
+   function Character_Match_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.CMF);
+
+   ----------------------------------
+   -- Send_Break_Request_Indicated --
+   ----------------------------------
+
+   function Send_Break_Request_Indicated (This : USART_Port) return Boolean is
+      (This.Periph.ISR.SBKF);
+
+   -----------------------------
+   -- Reciever_Pending_Wakeup --
+   -----------------------------
+
+   function Reciever_Pending_Wakeup (This : USART_Port) return Boolean is
+      (This.Periph.ISR.RWU);
+
+   ----------------------------------
+   -- Transmit_Enable_Acknowledged --
+   ----------------------------------
+
+   function Transmit_Enable_Acknowledged (This : USART_Port) return Boolean is
+      (This.Periph.ISR.TEACK);
 
    -------------------
    -- Clear_Overrun --
    -------------------
 
-   procedure Clear_Overrun (This : SPI_Port) is
-      Dummy1 : UInt16;
-      Dummy2 : SR_Register;
+   procedure Clear_Overrun (This : USART_Port) is
    begin
-      Dummy1 := This.Periph.DR.DR;
-      Dummy2 := This.Periph.ISR;
+      This.Periph.ICR.ORECF := True;
    end Clear_Overrun;
 
-   ---------------
-   -- Reset_CRC --
-   ---------------
-
-   procedure Reset_CRC (This : in out USART_Port) is
-   begin
-      This.Periph.CR1.CRCEN := False;
-      This.Periph.CR1.CRCEN := True;
-   end Reset_CRC;
-
    -------------------------
-   -- Is_Data_Frame_16bit --
+   -- Is_Data_Frame_9bit --
    -------------------------
 
-   function Is_Data_Frame_16bit (This : SPI_Port) return Boolean is
-      (This.Periph.CR1.DFF);
+   function Is_Data_Frame_9bit (This : USART_Port) return Boolean is
+      (This.Periph.CR1.M1);
 
    ---------------
    -- Data_Size --
    ---------------
 
    overriding
-   function Data_Size (This : SPI_Port) return HAL.SPI.SPI_Data_Size is
+   function Data_Size (This : USART_Port) return HAL.UART.UART_Data_Size is
    begin
-      if This.Periph.CR1.DFF then
-         return HAL.SPI.Data_Size_16b;
+      if This.Periph.CR1.M1 then
+         return HAL.UART.Data_Size_9b;
       else
-         return HAL.SPI.Data_Size_8b;
+         return HAL.UART.Data_Size_8b;
       end if;
    end Data_Size;
 
@@ -410,10 +454,6 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
-
       --  ??? right value to compare???
       if Current_Data_Direction (This) = D1Line_Tx  then
          This.Periph.CR1.BIDIOE := True;
@@ -459,10 +499,6 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
-
       --  ??? right value to compare???
       if Current_Data_Direction (This) = D1Line_Tx then
          This.Periph.CR1.BIDIOE := True;
@@ -505,10 +541,6 @@ package body STM32.USART is
       Outgoing : UInt8)
    is
    begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
-
       --  ??? right value to compare???
       if Current_Data_Direction (This) = D1Line_Tx  then
          This.Periph.CR1.BIDIOE := True;
@@ -549,10 +581,6 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
-
       if not Enabled (This) then
          Enable (This);
       end if;
@@ -563,10 +591,6 @@ package body STM32.USART is
          null;
       end loop;
 
-      if CRC_Enabled (This) and CRC_Error_Indicated (This) then
-         Reset_CRC (This);
-         Status := HAL.SPI.Err_Error;
-      end if;
       Status := HAL.SPI.Ok;
    end Receive;
 
@@ -583,9 +607,6 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
 
       if not Enabled (This) then
          Enable (This);
@@ -597,10 +618,6 @@ package body STM32.USART is
          null;
       end loop;
 
-      if CRC_Enabled (This) and CRC_Error_Indicated (This) then
-         Reset_CRC (This);
-         Status := HAL.SPI.Err_Error;
-      end if;
       Status := HAL.SPI.Ok;
    end Receive;
 
@@ -609,13 +626,10 @@ package body STM32.USART is
    -------------
 
    procedure Receive
-     (This     : in out USART_Port;
+     (This     : in out SPI_Port;
       Incoming : out UInt8)
    is
    begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
 
       if not Enabled (This) then
          Enable (This);
@@ -629,130 +643,69 @@ package body STM32.USART is
 
       Incoming := UInt8 (This.Periph.DR.DR);
 
-      if CRC_Enabled (This) then
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
-         Read_CRC : declare
-            Dummy : UInt16;
-         begin
-            Dummy := This.Periph.DR.DR;
-         end Read_CRC;
-      end if;
-
       while Busy (This) loop
          null;
       end loop;
-
-      if CRC_Enabled (This) and CRC_Error_Indicated (This) then
-         Reset_CRC (This);
-      end if;
    end Receive;
 
-   ----------------------
-   -- Transmit_Receive --
-   ----------------------
+   --  ----------------------
+   --  -- Transmit_Receive --
+   --  ----------------------
 
-   procedure Transmit_Receive
-     (This     : in out SPI_Port;
-      Outgoing : UInt8_Buffer;
-      Incoming : out UInt8_Buffer;
-      Size     : Positive)
-   is
-   begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
+   --  procedure Transmit_Receive
+   --    (This     : in out SPI_Port;
+   --     Outgoing : UInt8_Buffer;
+   --     Incoming : out UInt8_Buffer;
+   --     Size     : Positive)
+   --  is
+   --  begin
+   --     if not Enabled (This) then
+   --        Enable (This);
+   --     end if;
 
-      if not Enabled (This) then
-         Enable (This);
-      end if;
+   --     if Is_Data_Frame_16bit (This) then
+   --        Send_Receive_16bit_Mode (This, Outgoing, Incoming, Size);
+   --     else
+   --        Send_Receive_8bit_Mode (This, Outgoing, Incoming, Size);
+   --     end if;
 
-      if Is_Data_Frame_16bit (This) then
-         Send_Receive_16bit_Mode (This, Outgoing, Incoming, Size);
-      else
-         Send_Receive_8bit_Mode (This, Outgoing, Incoming, Size);
-      end if;
+   --     while Busy (This) loop
+   --        null;
+   --     end loop;
+   --  end Transmit_Receive;
 
-      --  Read CRC to close CRC calculation process
-      if CRC_Enabled (This) then
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
-         Read_CRC : declare
-            Dummy : UInt16;
-         begin
-            Dummy := This.Periph.DR.DR;
-         end Read_CRC;
-      end if;
+   --  ----------------------
+   --  -- Transmit_Receive --
+   --  ----------------------
 
-      while Busy (This) loop
-         null;
-      end loop;
+   --  procedure Transmit_Receive
+   --    (This     : in out SPI_Port;
+   --     Outgoing : UInt8;
+   --     Incoming : out UInt8)
+   --  is
+   --  begin
 
-      if CRC_Enabled (This) and CRC_Error_Indicated (This) then
-         Reset_CRC (This);
-      end if;
-   end Transmit_Receive;
+   --     if not Enabled (This) then
+   --        Enable (This);
+   --     end if;
 
-   ----------------------
-   -- Transmit_Receive --
-   ----------------------
+   --     if Is_Data_Frame_16bit (This) then
+   --        raise Program_Error;
+   --     end if;
 
-   procedure Transmit_Receive
-     (This     : in out SPI_Port;
-      Outgoing : UInt8;
-      Incoming : out UInt8)
-   is
-   begin
-      if CRC_Enabled (This) then
-         Reset_CRC (This);
-      end if;
+   --     This.Periph.DR.DR := UInt16 (Outgoing);
 
-      if not Enabled (This) then
-         Enable (This);
-      end if;
+   --     --  wait until data is received
+   --     while Rx_Is_Empty (This) loop
+   --        null;
+   --     end loop;
 
-      if Is_Data_Frame_16bit (This) then
-         raise Program_Error;
-      end if;
+   --     Incoming := UInt8 (This.Periph.DR.DR);
 
-      This.Periph.DR.DR := UInt16 (Outgoing);
-
-      --  enable CRC transmission
-      if CRC_Enabled (This) then
-         This.Periph.CR1.CRCNEXT := True;
-      end if;
-
-      --  wait until data is received
-      while Rx_Is_Empty (This) loop
-         null;
-      end loop;
-
-      Incoming := UInt8 (This.Periph.DR.DR);
-
-      --  Read CRC UInt8 to close CRC calculation
-      if CRC_Enabled (This) then
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
-         Read_CRC : declare
-            Dummy : UInt16;
-         begin
-            Dummy := This.Periph.DR.DR;
-         end Read_CRC;
-      end if;
-
-      while Busy (This) loop
-         null;
-      end loop;
-
-      if CRC_Enabled (This) and CRC_Error_Indicated (This) then
-         Reset_CRC (This);
-      end if;
-   end Transmit_Receive;
+   --     while Busy (This) loop
+   --        null;
+   --     end loop;
+   --  end Transmit_Receive;
 
    ---------------------------
    -- Data_Register_Address --
@@ -770,7 +723,7 @@ package body STM32.USART is
    -- Send_Receive_16bit_Mode --
    -----------------------------
 
-   procedure Send_Receive_16bit_Mode
+   procedure Send_Receive_9bit_Mode
      (This     : in out SPI_Port;
       Outgoing : UInt8_Buffer;
       Incoming : out UInt8_Buffer;
@@ -788,11 +741,6 @@ package body STM32.USART is
       end if;
 
       if Tx_Count = 0 then
-
-         --  enable CRC transmission
-         if CRC_Enabled (This) then
-            This.Periph.CR1.CRCNEXT := True;
-         end if;
 
          --  wait until data is received
          while Rx_Is_Empty (This) loop
@@ -816,11 +764,6 @@ package body STM32.USART is
          Outgoing_Index := Outgoing_Index + 2;
          Tx_Count := Tx_Count - 1;
 
-         --  enable CRC transmission
-         if Tx_Count = 0 and CRC_Enabled (This) then
-            This.Periph.CR1.CRCNEXT := True;
-         end if;
-
          --  wait until data is received
          while Rx_Is_Empty (This) loop
             null;
@@ -841,7 +784,7 @@ package body STM32.USART is
          As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
            This.Periph.DR.DR;
       end if;
-   end Send_Receive_16bit_Mode;
+   end Send_Receive_9bit_Mode;
 
    ----------------------------
    -- Send_Receive_8bit_Mode --
@@ -865,11 +808,6 @@ package body STM32.USART is
 
       if Tx_Count = 0 then
 
-         --  enable CRC transmission
-         if CRC_Enabled (This) then
-            This.Periph.CR1.CRCNEXT := True;
-         end if;
-
          --  wait until data is received
          while Rx_Is_Empty (This) loop
             null;
@@ -890,11 +828,6 @@ package body STM32.USART is
          This.Periph.DR.DR := UInt16 (Outgoing (Outgoing_Index));
          Outgoing_Index := Outgoing_Index + 1;
          Tx_Count := Tx_Count - 1;
-
-         --  enable CRC transmission
-         if Tx_Count = 0 and CRC_Enabled (This) then
-            This.Periph.CR1.CRCNEXT := True;
-         end if;
 
          --  wait until data is received
          while Rx_Is_Empty (This) loop
@@ -919,7 +852,7 @@ package body STM32.USART is
    -- Send_16bit_Mode --
    ---------------------
 
-   procedure Send_16bit_Mode
+   procedure Send_9bit_Mode
      (This     : in out SPI_Port;
       Outgoing : HAL.SPI.SPI_Data_16b)
    is
@@ -944,11 +877,7 @@ package body STM32.USART is
          Index := Index + 2;
          Tx_Count := Tx_Count - 1;
       end loop;
-
-      if CRC_Enabled (This) then
-         This.Periph.CR1.CRCNEXT := True;
-      end if;
-   end Send_16bit_Mode;
+   end Send_9bit_Mode;
 
    --------------------
    -- Send_8bit_Mode --
@@ -977,17 +906,13 @@ package body STM32.USART is
          Index := Index + 1;
          Tx_Count := Tx_Count - 1;
       end loop;
-
-      if CRC_Enabled (This) then
-         This.Periph.CR1.CRCNEXT := True;
-      end if;
    end Send_8bit_Mode;
 
    ------------------------
    -- Receive_16bit_Mode --
    ------------------------
 
-   procedure Receive_16bit_Mode
+   procedure Receive_9bit_Mode
      (This     : in out SPI_Port;
       Incoming : out HAL.SPI.SPI_Data_16b)
    is
@@ -1002,7 +927,7 @@ package body STM32.USART is
          end loop;
          K := This.Periph.DR.DR;
       end loop;
-   end Receive_16bit_Mode;
+   end Receive_9bit_Mode;
 
    -----------------------
    -- Receive_8bit_Mode --

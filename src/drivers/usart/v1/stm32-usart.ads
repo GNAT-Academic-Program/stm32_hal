@@ -98,7 +98,7 @@ package STM32.USART is
       Parity              : USART_Parity            := No_Parity;
       Oversampling        : USART_Oversampling      := Oversampling_16x;
       Baud_Rate           : UInt32;
-      CRC_Poly            : UInt16 := 0;
+      --  Enable_DMA          : Boolean                 := False;
    end record;
 
    procedure Configure (This : in out USART_Port; Conf : USART_Configuration);
@@ -128,34 +128,63 @@ package STM32.USART is
    function Tx_Is_Empty (This : USART_Port) return Boolean
      with Inline;
 
+   function Tx_Is_Complete (This : USART_Port) return Boolean
+     with Inline;
+
    function Busy (This : USART_Port) return Boolean
      with Inline;
 
-   function Channel_Side_Indicated (This : USART_Port) return Boolean
+   function Parity_Error_Indicated (This : USART_Port) return Boolean
      with Inline;
 
-   function Underrun_Indicated (This : USART_Port) return Boolean
+   function Framing_Error_Indicated (This : USART_Port) return Boolean
      with Inline;
 
-   function CRC_Error_Indicated (This : USART_Port) return Boolean
-     with Inline;
-
-   function Mode_Fault_Indicated (This : USART_Port) return Boolean
+   function Start_Bit_Noise_Detected (This : USART_Port) return Boolean
      with Inline;
 
    function Overrun_Indicated (This : USART_Port) return Boolean
      with Inline;
 
-   function Frame_Fmt_Error_Indicated (This : USART_Port) return Boolean
+   function Idle_Line_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function LIN_Break_Detected (This : USART_Port) return Boolean
+     with Inline;
+
+   function CTS_Interrupt_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function CTS_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function Reciever_Timeout_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function End_Of_Block_Indicated (This : USART_Port) return Boolean
+     with Inline;
+
+   function Auto_Baud_Rate_Failed (This : USART_Port) return Boolean
+     with Inline;
+   
+   function Auto_Baud_Rate_Successful (This : USART_Port) return Boolean
+     with Inline;
+   
+   function Character_Match_Indicated (This : USART_Port) return Boolean
+     with Inline;
+   
+   function Send_Break_Request_Indicated (This : USART_Port) return Boolean
+     with Inline;
+   
+   function Reciever_Pending_Wakeup (This : USART_Port) return Boolean
+     with Inline;
+   
+   function Transmit_Enable_Acknowledged (This : USART_Port) return Boolean
      with Inline;
 
    procedure Clear_Overrun (This : USART_Port);
 
-   procedure Reset_CRC (This : in out USART_Port);
-
-   function CRC_Enabled (This : USART_Port) return Boolean;
-
-   function Is_Data_Frame_16bit (This : USART_Port) return Boolean;
+   function Is_Data_Frame_9bit (This : USART_Port) return Boolean;
 
    function Current_Mode (This : USART_Port) return USART_Mode;
 
@@ -163,12 +192,12 @@ package STM32.USART is
      USART_Data_Direction;
 
    --  The following I/O routines implement the higher level functionality for
-   --  CRC and data direction, among others.
+   --  data direction and status indicators, among others.
 
-   type UInt8_Buffer is array (Natural range <>) of UInt8
-     with Alignment => 2;
-   --  The alignment is set to 2 because we treat component pairs as half_word
-   --  values when sending/receiving in 16-bit mode.
+   --  type UInt8_Buffer is array (Natural range <>) of UInt8
+   --    with Alignment => 2;
+   --  --  The alignment is set to 2 because we treat component pairs as half_word
+   --  --  values when sending/receiving in 16-bit mode.
 
    --  Blocking
 
