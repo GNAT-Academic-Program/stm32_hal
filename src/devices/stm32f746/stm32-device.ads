@@ -42,7 +42,7 @@
 --  This file provides declarations for devices on the STM32F42xxx MCUs
 --  manufactured by ST Microelectronics.  For example, an STM32F429.
 
--- private with ADL_Config;
+--  private with ADL_Config;
 
 with STM32_SVD; use STM32_SVD;
 with STM32_SVD.SAI;
@@ -52,7 +52,7 @@ with STM32.ADC;  use STM32.ADC;
 with STM32.DAC;  use STM32.DAC;
 with STM32.DMA;  use STM32.DMA;
 with STM32.GPIO; use STM32.GPIO;
---  with STM32.USARTs;  use STM32.USARTs;
+with STM32.USART;   use STM32.USART;
 with STM32.I2C;     use STM32.I2C;
 with STM32.SDMMC;   use STM32.SDMMC;
 with STM32.SPI;     use STM32.SPI;
@@ -379,18 +379,48 @@ package STM32.Device is
    procedure Enable_Clock (This : aliased in out Digital_To_Analog_Converter);
    procedure Reset (This : aliased in out Digital_To_Analog_Converter);
 
---     USART_1 : aliased USART with Import, Volatile, Address => USART1_Base;
---     USART_2 : aliased USART with Import, Volatile, Address => USART2_Base;
---     USART_3 : aliased USART with Import, Volatile, Address => USART3_Base;
---     UART_4  : aliased USART with Import, Volatile, Address => UART4_Base;
---     UART_5  : aliased USART with Import, Volatile, Address => UART5_Base;
---     USART_6 : aliased USART with Import, Volatile, Address => USART6_Base;
---     USART_7 : aliased USART with Import, Volatile, Address => UART7_Base;
---     USART_8 : aliased USART with Import, Volatile, Address => UART8_Base;
---
---     procedure Enable_Clock (This : aliased in out USART);
---
---     procedure Reset (This : aliased in out USART);
+   Internal_USART_1 : aliased Internal_USART_Port with
+      Import, Volatile, Address => USART1_Base;
+   Internal_USART_2 : aliased Internal_USART_Port with
+      Import, Volatile, Address => USART2_Base;
+   Internal_USART_3 : aliased Internal_USART_Port with
+      Import, Volatile, Address => USART3_Base;
+   Internal_UART_4  : aliased Internal_USART_Port with
+      Import, Volatile, Address => UART4_Base;
+   Internal_UART_5  : aliased Internal_USART_Port with
+      Import, Volatile, Address => UART5_Base;
+   Internal_USART_6 : aliased Internal_USART_Port with
+      Import, Volatile, Address => USART6_Base;
+   Internal_UART_7  : aliased Internal_USART_Port with
+      Import, Volatile, Address => UART7_Base;
+   Internal_UART_8  : aliased Internal_USART_Port with
+      Import, Volatile, Address => UART8_Base;
+
+   USART_1 : aliased USART_Port (Internal_USART_1'Access);
+   USART_2 : aliased USART_Port (Internal_USART_2'Access);
+   USART_3 : aliased USART_Port (Internal_USART_3'Access);
+   UART_4  : aliased USART_Port (Internal_UART_4'Access);
+   UART_5  : aliased USART_Port (Internal_UART_5'Access);
+   USART_6 : aliased USART_Port (Internal_USART_6'Access);
+   UART_7  : aliased USART_Port (Internal_UART_7'Access);
+   UART_8  : aliased USART_Port (Internal_UART_8'Access);
+
+   type USART_Port_Id is (
+      USART_Id_1,
+      USART_Id_2,
+      USART_Id_3,
+      UART_Id_4,
+      UART_Id_5,
+      USART_Id_6,
+      UART_Id_7,
+      UART_Id_8
+   );
+
+   function As_Port_Id (Port : USART_Port'Class) return USART_Port_Id with
+     Inline;
+
+   procedure Enable_Clock (This : aliased in out USART_Port);
+   procedure Reset (This : aliased in out USART_Port);
 
    ---------
    -- DMA --
@@ -618,7 +648,7 @@ package STM32.Device is
 
 private
 
-   -- HSE_VALUE : constant UInt32 := ADL_Config.High_Speed_External_Clock;
+   --  HSE_VALUE : constant UInt32 := ADL_Config.High_Speed_External_Clock;
 
    GPIO_AF_RTC_50Hz_0  : constant GPIO_Alternate_Function := 0;
    GPIO_AF_MCO_0       : constant GPIO_Alternate_Function := 0;

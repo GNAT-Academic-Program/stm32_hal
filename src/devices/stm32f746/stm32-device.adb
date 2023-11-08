@@ -258,67 +258,94 @@ package body STM32.Device is
       RCC_Periph.APB1RSTR.DACRST := False;
    end Reset;
 
+   ----------------
+   -- As_Port_Id --
+   ----------------
+
+   function As_Port_Id (Port : USART_Port'Class) return USART_Port_Id is
+   begin
+      if Port.Periph.all'Address = USART1_Base then
+         return USART_Id_1;
+      elsif Port.Periph.all'Address = USART2_Base then
+         return USART_Id_2;
+      elsif Port.Periph.all'Address = USART3_Base then
+         return USART_Id_3;
+      elsif Port.Periph.all'Address = UART4_Base then
+         return UART_Id_4;
+      elsif Port.Periph.all'Address = UART5_Base then
+         return UART_Id_5;
+      elsif Port.Periph.all'Address = USART6_Base then
+         return USART_Id_6;
+      elsif Port.Periph.all'Address = UART7_Base then
+         return UART_Id_7;
+      elsif Port.Periph.all'Address = UART8_Base then
+         return UART_Id_8;
+      else
+         raise Unknown_Device;
+      end if;
+   end As_Port_Id;
+
    ------------------
    -- Enable_Clock --
    ------------------
 
---     procedure Enable_Clock (This : aliased in out USART) is
---     begin
---        if This'Address = USART1_Base then
---           RCC_Periph.APB2ENR.USART1EN := True;
---        elsif This'Address = USART2_Base then
---           RCC_Periph.APB1ENR.USART2EN := True;
---        elsif This'Address = USART3_Base then
---           RCC_Periph.APB1ENR.USART3EN := True;
---        elsif This'Address = UART4_Base then
---           RCC_Periph.APB1ENR.UART4EN := True;
---        elsif This'Address = UART5_Base then
---           RCC_Periph.APB1ENR.UART5EN := True;
---        elsif This'Address = USART6_Base then
---           RCC_Periph.APB2ENR.USART6EN := True;
---        elsif This'Address = UART7_Base then
---           RCC_Periph.APB1ENR.UART7ENR := True;
---        elsif This'Address = UART8_Base then
---           RCC_Periph.APB1ENR.UART8ENR := True;
---        else
---           raise Unknown_Device;
---        end if;
---     end Enable_Clock;
+   procedure Enable_Clock (This : aliased in out USART_Port) is
+   begin
+      if This.Periph'Address = USART1_Base then
+         RCC_Periph.APB2ENR.USART1EN := True;
+      elsif This.Periph'Address = USART2_Base then
+         RCC_Periph.APB1ENR.USART2EN := True;
+      elsif This.Periph'Address = USART3_Base then
+         RCC_Periph.APB1ENR.USART3EN := True;
+      elsif This.Periph'Address = UART4_Base then
+         RCC_Periph.APB1ENR.UART4EN := True;
+      elsif This.Periph'Address = UART5_Base then
+         RCC_Periph.APB1ENR.UART5EN := True;
+      elsif This.Periph'Address = USART6_Base then
+         RCC_Periph.APB2ENR.USART6EN := True;
+      elsif This.Periph'Address = UART7_Base then
+         RCC_Periph.APB1ENR.UART7ENR := True;
+      elsif This.Periph'Address = UART8_Base then
+         RCC_Periph.APB1ENR.UART8ENR := True;
+      else
+         raise Unknown_Device;
+      end if;
+   end Enable_Clock;
 
    -----------
    -- Reset --
    -----------
 
---     procedure Reset (This : aliased in out USART) is
---     begin
---        if This'Address = USART1_Base then
---           RCC_Periph.APB2RSTR.USART1RST := True;
---           RCC_Periph.APB2RSTR.USART1RST := False;
---        elsif This'Address = USART2_Base then
---           RCC_Periph.APB1RSTR.UART2RST := True;
---           RCC_Periph.APB1RSTR.UART2RST := False;
---        elsif This'Address = USART3_Base then
---           RCC_Periph.APB1RSTR.UART3RST := True;
---           RCC_Periph.APB1RSTR.UART3RST := False;
---        elsif This'Address = UART4_Base then
---           RCC_Periph.APB1RSTR.UART4RST := True;
---           RCC_Periph.APB1RSTR.UART4RST := False;
---        elsif This'Address = UART5_Base then
---           RCC_Periph.APB1RSTR.UART5RST := True;
---           RCC_Periph.APB1RSTR.UART5RST := False;
---        elsif This'Address = USART6_Base then
---           RCC_Periph.APB2RSTR.USART6RST := True;
---           RCC_Periph.APB2RSTR.USART6RST := False;
---        elsif This'Address = UART7_Base then
---           RCC_Periph.APB1RSTR.UART7RST := True;
---           RCC_Periph.APB1RSTR.UART7RST := False;
---        elsif This'Address = UART8_Base then
---           RCC_Periph.APB1RSTR.UART8RST := True;
---           RCC_Periph.APB1RSTR.UART8RST := False;
---        else
---           raise Unknown_Device;
---        end if;
---     end Reset;
+   procedure Reset (This : aliased in out USART_Port) is
+   begin
+      if This.Periph'Address = USART1_Base then
+         RCC_Periph.APB2RSTR.USART1RST := True;
+         RCC_Periph.APB2RSTR.USART1RST := False;
+      elsif This.Periph'Address = USART2_Base then
+         RCC_Periph.APB1RSTR.UART2RST := True;
+         RCC_Periph.APB1RSTR.UART2RST := False;
+      elsif This.Periph'Address = USART3_Base then
+         RCC_Periph.APB1RSTR.UART3RST := True;
+         RCC_Periph.APB1RSTR.UART3RST := False;
+      elsif This.Periph'Address = UART4_Base then
+         RCC_Periph.APB1RSTR.UART4RST := True;
+         RCC_Periph.APB1RSTR.UART4RST := False;
+      elsif This.Periph'Address = UART5_Base then
+         RCC_Periph.APB1RSTR.UART5RST := True;
+         RCC_Periph.APB1RSTR.UART5RST := False;
+      elsif This.Periph'Address = USART6_Base then
+         RCC_Periph.APB2RSTR.USART6RST := True;
+         RCC_Periph.APB2RSTR.USART6RST := False;
+      elsif This.Periph'Address = UART7_Base then
+         RCC_Periph.APB1RSTR.UART7RST := True;
+         RCC_Periph.APB1RSTR.UART7RST := False;
+      elsif This.Periph'Address = UART8_Base then
+         RCC_Periph.APB1RSTR.UART8RST := True;
+         RCC_Periph.APB1RSTR.UART8RST := False;
+      else
+         raise Unknown_Device;
+      end if;
+   end Reset;
 
    ------------------
    -- Enable_Clock --
