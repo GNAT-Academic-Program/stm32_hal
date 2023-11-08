@@ -86,9 +86,6 @@ package STM32.USART is
      (Oversampling_16x,
       Oversampling_8x);
 
-   type USART_Baud_Rate_Prescaler is
-     (BRP_2, BRP_4, BRP_8, BRP_16, BRP_32, BRP_64, BRP_128, BRP_256);
-
    type USART_Configuration is record
       Direction           : USART_Data_Direction    := RX_TX;
       Mode                : USART_Mode              := Asyncrhonous;
@@ -109,9 +106,9 @@ package STM32.USART is
 
    function Enabled (This : USART_Port) return Boolean;
 
-   procedure Send (This : in out USART_Port; Data : UInt16);
+   procedure Send (This : in out USART_Port; Data : UInt9);
 
-   function Data (This : USART_Port) return UInt16
+   function Data (This : USART_Port) return UInt9
      with Inline;
 
    procedure Send (This : in out USART_Port; Data : UInt8);
@@ -166,19 +163,19 @@ package STM32.USART is
 
    function Auto_Baud_Rate_Failed (This : USART_Port) return Boolean
      with Inline;
-   
+
    function Auto_Baud_Rate_Successful (This : USART_Port) return Boolean
      with Inline;
-   
+
    function Character_Match_Indicated (This : USART_Port) return Boolean
      with Inline;
-   
+
    function Send_Break_Request_Indicated (This : USART_Port) return Boolean
      with Inline;
-   
+
    function Reciever_Pending_Wakeup (This : USART_Port) return Boolean
      with Inline;
-   
+
    function Transmit_Enable_Acknowledged (This : USART_Port) return Boolean
      with Inline;
 
@@ -253,10 +250,15 @@ package STM32.USART is
 
    --  TODO: add the other higher-level HAL routines for interrupts and DMA
 
-   function Data_Register_Address
+   function TX_Data_Register_Address
      (This : USART_Port)
       return System.Address;
    --  For DMA transfer
+
+   function RX_Data_Register_Address
+     (This : USART_Port)
+      return System.Address;
+   --  For DMA transmer
 
 private
 
@@ -265,17 +267,17 @@ private
    type USART_Port (Periph : not null access Internal_USART_Port) is
      limited new HAL.UART.UART_Port with null record;
 
-   procedure Send_Receive_9bit_Mode
-     (This     : in out USART_Port;
-      Outgoing : UInt8_Buffer;
-      Incoming : out UInt8_Buffer;
-      Size     : Positive);
+   --  procedure Send_Receive_9bit_Mode
+   --    (This     : in out USART_Port;
+   --     Outgoing : UInt8_Buffer;
+   --     Incoming : out UInt8_Buffer;
+   --     Size     : Positive);
 
-   procedure Send_Receive_8bit_Mode
-     (This     : in out USART_Port;
-      Outgoing : UInt8_Buffer;
-      Incoming : out UInt8_Buffer;
-      Size     : Positive);
+   --  procedure Send_Receive_8bit_Mode
+   --    (This     : in out USART_Port;
+   --     Outgoing : UInt8_Buffer;
+   --     Incoming : out UInt8_Buffer;
+   --     Size     : Positive);
 
    procedure Send_9bit_Mode
      (This     : in out USART_Port;

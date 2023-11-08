@@ -49,39 +49,31 @@ package body STM32.USART is
 
    use type HAL.UART.UART_Data_Size;
 
-   Baud_Rate_Value : constant array (USART_Baud_Rate_Prescaler) of UInt3 :=
-     (BRP_2   => 2#000#,
-      BRP_4   => 2#001#,
-      BRP_8   => 2#010#,
-      BRP_16  => 2#011#,
-      BRP_32  => 2#100#,
-      BRP_64  => 2#101#,
-      BRP_128 => 2#110#,
-      BRP_256 => 2#111#);
+   --  type Half_Word_Pointer is access all UInt16
+   --    with Storage_Size => 0;
 
-   type Half_Word_Pointer is access all UInt16
-     with Storage_Size => 0;
+   --  function As_Half_Word_Pointer is new Ada.Unchecked_Conversion
+   --    (Source => System.Address, Target => Half_Word_Pointer);
+   --  --  So that we can treat the address of a UInt8 as a pointer to a two-UInt8
+   --  --  sequence representing a Half_Word quantity
 
-   function As_Half_Word_Pointer is new Ada.Unchecked_Conversion
-     (Source => System.Address, Target => Half_Word_Pointer);
-   --  So that we can treat the address of a UInt8 as a pointer to a two-UInt8
-   --  sequence representing a Half_Word quantity
+   -------------------------------
+   -- Periphial_Clock_Frequency --
+   -------------------------------
 
-   ---------------
-   -- APB_Clock --
-   ---------------
-
-   function APB_Clock (This : in out USART_Port) return UInt32 is
+   function Periphial_Clock_Frequency (
+      This : in out USART_Port
+   ) return UInt32 is
    begin
       if This.Periph.all'Address = USART1_Periph'Address
         or else
          This.Periph.all'Address = USART6_Periph'Address
       then
-         return Clocks.PCLK2;
+         return System_Clock_Frequencies.PCLK2;
       else
-         return Clocks.PCLK1;
+         return System_Clock_Frequencies.PCLK1;
       end if;
-   end APB_Clock;
+   end Periphial_Clock_Frequency;
 
    ---------------
    -- Configure --
@@ -91,7 +83,7 @@ package body STM32.USART is
       This : in out USART_Port;
       Conf : USART_Configuration
    ) is
-      Clock        : constant UInt32 := APB_Clock (This);
+      Clock        : constant UInt32 := Periphial_Clock_Frequency (This);
       Int_Scale    : constant UInt32 := (
          if Conf.Oversampling = Oversampling_8x then 2 else 4
       );
@@ -154,7 +146,7 @@ package body STM32.USART is
 
       This.Periph.CR1.M0    := False; -- If true, data_size is 7 bits.
       This.Periph.CR1.M1    := Conf.Data_Size = HAL.UART.Data_Size_9b;
-      -- Interrupt CR1 also contains interrupt configuration
+      --  Interrupt CR1 also contains interrupt configuration
 
       This.Periph.CR2.CLKEN := Conf.Mode = Syncrhonous;
       This.Periph.CR2.STOP := Conf.Stop_Bits'Enum_Rep;
@@ -230,7 +222,7 @@ package body STM32.USART is
    function Is_Busy (This : USART_Port) return Boolean is
    begin
       return (Rx_Is_Empty (This)
-              and not Transmission_Is_Complete (This))
+              and then not Tx_Is_Complete (This))
         or else Busy (This);
    end Is_Busy;
 
@@ -287,10 +279,12 @@ package body STM32.USART is
    -- Current_Data_Direction --
    ----------------------------
 
-   function Current_Data_Direction (This : USART_Port) return USART_Data_Direction
+   function Current_Data_Direction (
+      This : USART_Port
+   ) return USART_Data_Direction
    is
    begin
-      if This.Periph.CR1.TE and This.Periph.CR1.RE then
+      if This.Periph.CR1.TE and then This.Periph.CR1.RE then
          return RX_TX;
       elsif This.Periph.CR1.TE then
          return TX;
@@ -447,18 +441,13 @@ package body STM32.USART is
 
    overriding
    procedure Transmit
-     (This    : in out SPI_Port;
-      Data    : HAL.SPI.SPI_Data_8b;
-      Status  : out HAL.SPI.SPI_Status;
+     (This    : in out USART_Port;
+      Data    : HAL.UART.UART_Data_8b;
+      Status  : out HAL.UART.UART_Status;
       Timeout : Natural := 1000)
    is
       pragma Unreferenced (Timeout);
    begin
-      --  ??? right value to compare???
-      if Current_Data_Direction (This) = D1Line_Tx  then
-         This.Periph.CR1.BIDIOE := True;
-      end if;
-
       Clear_Overrun (This);
 
       if not Enabled (This) then
@@ -467,23 +456,22 @@ package body STM32.USART is
 
       Send_8bit_Mode (This, Data);
 
-      --  Wait until TXE flag is set to send data
-      while not Tx_Is_Empty (This) loop
-         null;
+      --  Wait until TC flag is set to indicate end of transmission
+      loop
+         exit when Tx_Is_Complete (This);
       end loop;
 
-      --  Wait until Busy flag is reset before disabling SPI
-      while Busy (This) loop
-         null;
+      --  Wait until Busy flag is reset before disabling USART
+      loop
+         exit when not Busy (This);
       end loop;
 
-      --  Clear OVERUN flag in 2-Line communication mode because received UInt8
-      --  is not read.
-      if Current_Data_Direction (This) in D2Lines_RxOnly | D2Lines_FullDuplex
-      then  -- right comparison ???
-         Clear_Overrun (This);
+      --  Return final transmission status
+      if Overrun_Indicated (This) then
+         Status := HAL.UART.Err_Error;
+      else
+         Status := HAL.UART.Ok;
       end if;
-      Status := HAL.SPI.Ok;
    end Transmit;
 
    --------------
@@ -492,44 +480,37 @@ package body STM32.USART is
 
    overriding
    procedure Transmit
-     (This    : in out SPI_Port;
-      Data    : HAL.SPI.SPI_Data_16b;
-      Status  : out HAL.SPI.SPI_Status;
+     (This    : in out USART_Port;
+      Data    : HAL.UART.UART_Data_9b;
+      Status  : out HAL.UART.UART_Status;
       Timeout : Natural := 1000)
    is
       pragma Unreferenced (Timeout);
    begin
-      --  ??? right value to compare???
-      if Current_Data_Direction (This) = D1Line_Tx then
-         This.Periph.CR1.BIDIOE := True;
-      end if;
-
       Clear_Overrun (This);
 
       if not Enabled (This) then
          Enable (This);
       end if;
 
-      Send_16bit_Mode (This, Data);
+      Send_9bit_Mode (This, Data);
 
-      --  Wait until TXE flag is set to send data
-      while not Tx_Is_Empty (This) loop
-         null;
+      --  Wait until TC flag is set to indicate end of transmission
+      loop
+         exit when Tx_Is_Complete (This);
       end loop;
 
-      --  Wait until Busy flag is reset before disabling SPI
-      while Busy (This) loop
-         null;
+      --  Wait until Busy flag is reset before disabling USART
+      loop
+         exit when not Busy (This);
       end loop;
 
-      --  Clear OVERUN flag in 2-Line communication mode because received UInt8
-      --  is not read.
-      if Current_Data_Direction (This) in D2Lines_RxOnly | D2Lines_FullDuplex
-      then  -- right comparison ???
-         Clear_Overrun (This);
-         Status := HAL.SPI.Err_Error;
+      --  Return final transmission status
+      if Overrun_Indicated (This) then
+         Status := HAL.UART.Err_Error;
+      else
+         Status := HAL.UART.Ok;
       end if;
-      Status := HAL.SPI.Ok;
    end Transmit;
 
    --------------
@@ -537,35 +518,29 @@ package body STM32.USART is
    --------------
 
    procedure Transmit
-     (This     : in out SPI_Port;
+     (This     : in out USART_Port;
       Outgoing : UInt8)
    is
    begin
-      --  ??? right value to compare???
-      if Current_Data_Direction (This) = D1Line_Tx  then
-         This.Periph.CR1.BIDIOE := True;
-      end if;
+      Clear_Overrun (This);
 
       if not Enabled (This) then
          Enable (This);
       end if;
 
-      This.Periph.DR.DR := UInt16 (Outgoing);
+      This.Periph.TDR.TDR := UInt9 (Outgoing);
 
-      while not Tx_Is_Empty (This) loop
-         null;
+      --  Wait until TC flag is set to indicate end of transmission
+      loop
+         exit when Tx_Is_Complete (This);
       end loop;
 
-      while Busy (This) loop
-         null;
+      --  Wait until Busy flag is reset before disabling USART
+      loop
+         exit when not Busy (This);
       end loop;
 
-      --  Clear OVERUN flag in 2-Line communication mode because received UInt8
-      --  is not read.
-      if Current_Data_Direction (This) in D2Lines_RxOnly | D2Lines_FullDuplex
-      then  -- right comparison ???
-         Clear_Overrun (This);
-      end if;
+      Clear_Overrun (This);
    end Transmit;
 
    -------------
@@ -574,9 +549,9 @@ package body STM32.USART is
 
    overriding
    procedure Receive
-     (This    : in out SPI_Port;
-      Data    : out HAL.SPI.SPI_Data_8b;
-      Status  : out HAL.SPI.SPI_Status;
+     (This    : in out USART_Port;
+      Data    : out HAL.UART.UART_Data_8b;
+      Status  : out HAL.UART.UART_Status;
       Timeout : Natural := 1000)
    is
       pragma Unreferenced (Timeout);
@@ -587,11 +562,11 @@ package body STM32.USART is
 
       Receive_8bit_Mode (This, Data);
 
-      while Busy (This) loop
-         null;
+      loop
+         exit when not Busy (This);
       end loop;
 
-      Status := HAL.SPI.Ok;
+      Status := HAL.UART.Ok;
    end Receive;
 
    -------------
@@ -600,9 +575,9 @@ package body STM32.USART is
 
    overriding
    procedure Receive
-     (This    : in out SPI_Port;
-      Data    : out HAL.SPI.SPI_Data_16b;
-      Status  : out HAL.SPI.SPI_Status;
+     (This    : in out USART_Port;
+      Data    : out HAL.UART.UART_Data_9b;
+      Status  : out HAL.UART.UART_Status;
       Timeout : Natural := 1000)
    is
       pragma Unreferenced (Timeout);
@@ -612,13 +587,13 @@ package body STM32.USART is
          Enable (This);
       end if;
 
-      Receive_16bit_Mode (This, Data);
+      Receive_9bit_Mode (This, Data);
 
-      while Busy (This) loop
-         null;
+      loop
+         exit when not Busy (This);
       end loop;
 
-      Status := HAL.SPI.Ok;
+      Status := HAL.UART.Ok;
    end Receive;
 
    -------------
@@ -626,7 +601,7 @@ package body STM32.USART is
    -------------
 
    procedure Receive
-     (This     : in out SPI_Port;
+     (This     : in out USART_Port;
       Incoming : out UInt8)
    is
    begin
@@ -635,13 +610,11 @@ package body STM32.USART is
          Enable (This);
       end if;
 
-      This.Periph.DR.DR := 0; -- generate clock
-
-      while Rx_Is_Empty (This) loop
-         null;
+      loop
+         exit when not Rx_Is_Empty (This);
       end loop;
 
-      Incoming := UInt8 (This.Periph.DR.DR);
+      Incoming := UInt8 (This.Periph.RDR.RDR);
 
       while Busy (This) loop
          null;
@@ -707,175 +680,175 @@ package body STM32.USART is
    --     end loop;
    --  end Transmit_Receive;
 
-   ---------------------------
-   -- Data_Register_Address --
-   ---------------------------
+   ------------------------------
+   -- TX_Data_Register_Address --
+   ------------------------------
 
-   function Data_Register_Address
-     (This : SPI_Port)
+   function TX_Data_Register_Address
+     (This : USART_Port)
       return System.Address
    is
    begin
-      return This.Periph.DR'Address;
-   end Data_Register_Address;
+      return This.Periph.TDR'Address;
+   end TX_Data_Register_Address;
 
-   -----------------------------
-   -- Send_Receive_16bit_Mode --
-   -----------------------------
+   ------------------------------
+   -- RX_Data_Register_Address --
+   ------------------------------
 
-   procedure Send_Receive_9bit_Mode
-     (This     : in out SPI_Port;
-      Outgoing : UInt8_Buffer;
-      Incoming : out UInt8_Buffer;
-      Size     : Positive)
+   function RX_Data_Register_Address
+     (This : USART_Port)
+      return System.Address
    is
-      Tx_Count : Natural := Size;
-      Outgoing_Index : Natural := Outgoing'First;
-      Incoming_Index : Natural := Incoming'First;
    begin
-      if Current_Mode (This) = Slave or else Tx_Count = 1 then
-         This.Periph.DR.DR :=
-           As_Half_Word_Pointer (Outgoing (Outgoing_Index)'Address).all;
-         Outgoing_Index := Outgoing_Index + 2;
-         Tx_Count := Tx_Count - 1;
-      end if;
+      return This.Periph.RDR'Address;
+   end RX_Data_Register_Address;
 
-      if Tx_Count = 0 then
+   --  -----------------------------
+   --  -- Send_Receive_16bit_Mode --
+   --  -----------------------------
 
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
+   --  procedure Send_Receive_9bit_Mode
+   --    (This     : in out SPI_Port;
+   --     Outgoing : UInt8_Buffer;
+   --     Incoming : out UInt8_Buffer;
+   --     Size     : Positive)
+   --  is
+   --     Tx_Count : Natural := Size;
+   --     Outgoing_Index : Natural := Outgoing'First;
+   --     Incoming_Index : Natural := Incoming'First;
+   --  begin
+   --     if Current_Mode (This) = Slave or else Tx_Count = 1 then
+   --        This.Periph.DR.DR :=
+   --          As_Half_Word_Pointer (Outgoing (Outgoing_Index)'Address).all;
+   --        Outgoing_Index := Outgoing_Index + 2;
+   --        Tx_Count := Tx_Count - 1;
+   --     end if;
 
-         As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
-           This.Periph.DR.DR;
+   --     if Tx_Count = 0 then
 
-         return;
-      end if;
+   --        --  wait until data is received
+   --        while Rx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-      while Tx_Count > 0 loop
-         --  wait until we can send data
-         while not Tx_Is_Empty (This) loop
-            null;
-         end loop;
+   --        As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
+   --          This.Periph.DR.DR;
 
-         This.Periph.DR.DR :=
-           As_Half_Word_Pointer (Outgoing (Outgoing_Index)'Address).all;
-         Outgoing_Index := Outgoing_Index + 2;
-         Tx_Count := Tx_Count - 1;
+   --        return;
+   --     end if;
 
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
+   --     while Tx_Count > 0 loop
+   --        --  wait until we can send data
+   --        while not Tx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-         As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
-           This.Periph.DR.DR;
-         Incoming_Index := Incoming_Index + 2;
-      end loop;
+   --        This.Periph.DR.DR :=
+   --          As_Half_Word_Pointer (Outgoing (Outgoing_Index)'Address).all;
+   --        Outgoing_Index := Outgoing_Index + 2;
+   --        Tx_Count := Tx_Count - 1;
 
-      --  receive the last UInt8
-      if Current_Mode (This) = Slave then
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
+   --        --  wait until data is received
+   --        while Rx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-         As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
-           This.Periph.DR.DR;
-      end if;
-   end Send_Receive_9bit_Mode;
+   --        As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
+   --          This.Periph.DR.DR;
+   --        Incoming_Index := Incoming_Index + 2;
+   --     end loop;
 
-   ----------------------------
-   -- Send_Receive_8bit_Mode --
-   ----------------------------
+   --     --  receive the last UInt8
+   --     if Current_Mode (This) = Slave then
+   --        --  wait until data is received
+   --        while Rx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-   procedure Send_Receive_8bit_Mode
-     (This     : in out SPI_Port;
-      Outgoing : UInt8_Buffer;
-      Incoming : out UInt8_Buffer;
-      Size     : Positive)
-   is
-      Tx_Count : Natural := Size;
-      Outgoing_Index : Natural := Outgoing'First;
-      Incoming_Index : Natural := Incoming'First;
-   begin
-      if Current_Mode (This) = Slave or else Tx_Count = 1 then
-         This.Periph.DR.DR := UInt16 (Outgoing (Outgoing_Index));
-         Outgoing_Index := Outgoing_Index + 1;
-         Tx_Count := Tx_Count - 1;
-      end if;
+   --        As_Half_Word_Pointer (Incoming (Incoming_Index)'Address).all :=
+   --          This.Periph.DR.DR;
+   --     end if;
+   --  end Send_Receive_9bit_Mode;
 
-      if Tx_Count = 0 then
+   --  ----------------------------
+   --  -- Send_Receive_8bit_Mode --
+   --  ----------------------------
 
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
+   --  procedure Send_Receive_8bit_Mode
+   --    (This     : in out SPI_Port;
+   --     Outgoing : UInt8_Buffer;
+   --     Incoming : out UInt8_Buffer;
+   --     Size     : Positive)
+   --  is
+   --     Tx_Count : Natural := Size;
+   --     Outgoing_Index : Natural := Outgoing'First;
+   --     Incoming_Index : Natural := Incoming'First;
+   --  begin
+   --     if Current_Mode (This) = Slave or else Tx_Count = 1 then
+   --        This.Periph.DR.DR := UInt16 (Outgoing (Outgoing_Index));
+   --        Outgoing_Index := Outgoing_Index + 1;
+   --        Tx_Count := Tx_Count - 1;
+   --     end if;
 
-         Incoming (Incoming_Index) := UInt8 (This.Periph.DR.DR);
+   --     if Tx_Count = 0 then
 
-         return;
+   --        --  wait until data is received
+   --        while Rx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-      end if;
+   --        Incoming (Incoming_Index) := UInt8 (This.Periph.DR.DR);
 
-      while Tx_Count > 0 loop
-         --  wait until we can send data
-         while not Tx_Is_Empty (This) loop
-            null;
-         end loop;
+   --        return;
 
-         This.Periph.DR.DR := UInt16 (Outgoing (Outgoing_Index));
-         Outgoing_Index := Outgoing_Index + 1;
-         Tx_Count := Tx_Count - 1;
+   --     end if;
 
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
+   --     while Tx_Count > 0 loop
+   --        --  wait until we can send data
+   --        while not Tx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-         Incoming (Incoming_Index) := UInt8 (This.Periph.DR.DR);
-         Incoming_Index := Incoming_Index + 1;
-      end loop;
+   --        This.Periph.DR.DR := UInt16 (Outgoing (Outgoing_Index));
+   --        Outgoing_Index := Outgoing_Index + 1;
+   --        Tx_Count := Tx_Count - 1;
 
-      if Current_Mode (This) = Slave then
-         --  wait until data is received
-         while Rx_Is_Empty (This) loop
-            null;
-         end loop;
+   --        --  wait until data is received
+   --        while Rx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
 
-         Incoming (Incoming_Index) := Data (This);
-      end if;
-   end Send_Receive_8bit_Mode;
+   --        Incoming (Incoming_Index) := UInt8 (This.Periph.DR.DR);
+   --        Incoming_Index := Incoming_Index + 1;
+   --     end loop;
+
+   --     if Current_Mode (This) = Slave then
+   --        --  wait until data is received
+   --        while Rx_Is_Empty (This) loop
+   --           null;
+   --        end loop;
+
+   --        Incoming (Incoming_Index) := Data (This);
+   --     end if;
+   --  end Send_Receive_8bit_Mode;
 
    ---------------------
    -- Send_16bit_Mode --
    ---------------------
 
    procedure Send_9bit_Mode
-     (This     : in out SPI_Port;
-      Outgoing : HAL.SPI.SPI_Data_16b)
+     (This     : in out USART_Port;
+      Outgoing : HAL.UART.UART_Data_9b)
    is
-      Tx_Count : Natural := Outgoing'Length;
-      Index    : Natural := Outgoing'First;
    begin
-      if Current_Mode (This) = Slave or else Tx_Count = 1 then
-         This.Periph.DR.DR :=
-           As_Half_Word_Pointer (Outgoing (Index)'Address).all;
-         Index := Index + 2;
-         Tx_Count := Tx_Count - 1;
-      end if;
-
-      while Tx_Count > 0 loop
+      for K of Outgoing loop
          --  wait until we can send data
-         while not Tx_Is_Empty (This) loop
-            null;
+         loop
+            exit when Tx_Is_Empty (This);
          end loop;
 
-         This.Periph.DR.DR :=
-           As_Half_Word_Pointer (Outgoing (Index)'Address).all;
-         Index := Index + 2;
-         Tx_Count := Tx_Count - 1;
+         This.Periph.TDR.TDR := K;
       end loop;
    end Send_9bit_Mode;
 
@@ -884,27 +857,17 @@ package body STM32.USART is
    --------------------
 
    procedure Send_8bit_Mode
-     (This     : in out SPI_Port;
-      Outgoing : HAL.SPI.SPI_Data_8b)
+     (This     : in out USART_Port;
+      Outgoing : HAL.UART.UART_Data_8b)
    is
-      Tx_Count : Natural := Outgoing'Length;
-      Index    : Natural := Outgoing'First;
    begin
-      if Current_Mode (This) = Slave or else Tx_Count = 1 then
-         This.Periph.DR.DR := UInt16 (Outgoing (Index));
-         Index := Index + 1;
-         Tx_Count := Tx_Count - 1;
-      end if;
-
-      while Tx_Count > 0 loop
+      for K of Outgoing loop
          --  wait until we can send data
-         while not Tx_Is_Empty (This) loop
-            null;
+         loop
+            exit when Tx_Is_Empty (This);
          end loop;
 
-         This.Periph.DR.DR := UInt16 (Outgoing (Index));
-         Index := Index + 1;
-         Tx_Count := Tx_Count - 1;
+         This.Periph.TDR.TDR := UInt9 (K);
       end loop;
    end Send_8bit_Mode;
 
@@ -913,19 +876,15 @@ package body STM32.USART is
    ------------------------
 
    procedure Receive_9bit_Mode
-     (This     : in out SPI_Port;
-      Incoming : out HAL.SPI.SPI_Data_16b)
+     (This     : in out USART_Port;
+      Incoming : out HAL.UART.UART_Data_9b)
    is
-      Generate_Clock : constant Boolean := Current_Mode (This) = Master;
    begin
       for K of Incoming loop
-         if Generate_Clock then
-            This.Periph.DR.DR := 0;
-         end if;
-         while Rx_Is_Empty (This) loop
-            null;
+         loop
+            exit when not Rx_Is_Empty (This);
          end loop;
-         K := This.Periph.DR.DR;
+         K := This.Periph.RDR.RDR;
       end loop;
    end Receive_9bit_Mode;
 
@@ -934,19 +893,15 @@ package body STM32.USART is
    -----------------------
 
    procedure Receive_8bit_Mode
-     (This     : in out SPI_Port;
-      Incoming : out HAL.SPI.SPI_Data_8b)
+     (This     : in out USART_Port;
+      Incoming : out HAL.UART.UART_Data_8b)
    is
-      Generate_Clock : constant Boolean := Current_Mode (This) = Master;
    begin
       for K of Incoming loop
-         if Generate_Clock then
-            This.Periph.DR.DR := 0;
-         end if;
-         while Rx_Is_Empty (This) loop
-            null;
+         loop
+            exit when not Rx_Is_Empty (This);
          end loop;
-         K := UInt8 (This.Periph.DR.DR);
+         K := UInt8 (This.Periph.RDR.RDR);
       end loop;
    end Receive_8bit_Mode;
 
