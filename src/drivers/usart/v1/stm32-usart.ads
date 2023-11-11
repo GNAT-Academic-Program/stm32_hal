@@ -60,8 +60,8 @@ package STM32.USART is
       RX_TX);
 
    type USART_Mode is
-     (Syncrhonous,
-      Asyncrhonous);
+     (Synchronous,
+      Asynchronous);
 
    type USART_Flow_Control is
      (No_Flow_Control,
@@ -88,7 +88,7 @@ package STM32.USART is
 
    type USART_Configuration is record
       Direction           : USART_Data_Direction    := RX_TX;
-      Mode                : USART_Mode              := Asyncrhonous;
+      Mode                : USART_Mode              := Asynchronous;
       Data_Size           : HAL.UART.UART_Data_Size := HAL.UART.Data_Size_8b;
       Flow_Control        : USART_Flow_Control      := No_Flow_Control;
       Stop_Bits           : USART_Stop_Bits         := Stopbits_1;

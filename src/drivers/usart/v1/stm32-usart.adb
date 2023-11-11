@@ -65,10 +65,7 @@ package body STM32.USART is
       This : in out USART_Port
    ) return UInt32 is
    begin
-      if This.Periph.all'Address = USART1_Periph'Address
-        or else
-         This.Periph.all'Address = USART6_Periph'Address
-      then
+      if As_Port_Id (This) in USART_Id_1 | USART_Id_6 then
          return System_Clock_Frequencies.PCLK2;
       else
          return System_Clock_Frequencies.PCLK1;
@@ -148,7 +145,7 @@ package body STM32.USART is
       This.Periph.CR1.M1    := Conf.Data_Size = HAL.UART.Data_Size_9b;
       --  Interrupt CR1 also contains interrupt configuration
 
-      This.Periph.CR2.CLKEN := Conf.Mode = Syncrhonous;
+      This.Periph.CR2.CLKEN := Conf.Mode = Synchronous;
       This.Periph.CR2.STOP := Conf.Stop_Bits'Enum_Rep;
    end Configure;
 
@@ -269,9 +266,9 @@ package body STM32.USART is
    function Current_Mode (This : USART_Port) return USART_Mode is
    begin
       if This.Periph.CR2.CLKEN then
-         return Syncrhonous;
+         return Synchronous;
       else
-         return Asyncrhonous;
+         return Asynchronous;
       end if;
    end Current_Mode;
 

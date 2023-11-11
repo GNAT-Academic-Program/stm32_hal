@@ -419,8 +419,11 @@ package STM32.Device is
    function As_Port_Id (Port : USART_Port'Class) return USART_Port_Id with
      Inline;
 
-   procedure Enable_Clock (This : aliased in out USART_Port);
-   procedure Reset (This : aliased in out USART_Port);
+   procedure Enable_Clock (This : USART_Port'Class);
+   procedure Enable_Clock (This : USART_Port_Id);
+
+   procedure Reset (This : USART_Port'Class);
+   procedure Reset (This : USART_Port_Id);
 
    ---------
    -- DMA --
