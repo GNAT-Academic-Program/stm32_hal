@@ -411,6 +411,24 @@ package body STM32.USART is
       This.Periph.ICR.ORECF := True;
    end Clear_Overrun;
 
+   ----------------
+   -- Clear_Idle --
+   ----------------
+
+   procedure Clear_Idle (This : USART_Port) is
+   begin
+      This.Periph.ICR.IDLECF := True;
+   end Clear_Idle;
+
+   ---------------------
+   -- Clear_Read_Data --
+   ---------------------
+
+   procedure Clear_Read_Data (This : USART_Port) is
+   begin
+      This.Periph.RQR.RXFRQ := True;
+   end Clear_Read_Data;
+
    -------------------------
    -- Is_Data_Frame_9bit --
    -------------------------
@@ -445,10 +463,14 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
-      Clear_Overrun (This);
-
       if not Enabled (This) then
          Enable (This);
+      end if;
+
+      if not Tx_Is_Complete (This) then
+         -- Transmission is already ongoing (likely through interrupts or DMA)
+         Status := HAL.UART.Busy;
+         return;
       end if;
 
       Send_8bit_Mode (This, Data);
@@ -463,12 +485,7 @@ package body STM32.USART is
          exit when not Busy (This);
       end loop;
 
-      --  Return final transmission status
-      if Overrun_Indicated (This) then
-         Status := HAL.UART.Err_Error;
-      else
-         Status := HAL.UART.Ok;
-      end if;
+      Status := HAL.UART.Ok;
    end Transmit;
 
    --------------
@@ -484,8 +501,6 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
-      Clear_Overrun (This);
-
       if not Enabled (This) then
          Enable (This);
       end if;
@@ -502,12 +517,7 @@ package body STM32.USART is
          exit when not Busy (This);
       end loop;
 
-      --  Return final transmission status
-      if Overrun_Indicated (This) then
-         Status := HAL.UART.Err_Error;
-      else
-         Status := HAL.UART.Ok;
-      end if;
+      Status := HAL.UART.Ok;
    end Transmit;
 
    --------------
@@ -553,6 +563,8 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
+      Clear_Overrun (This);
+
       if not Enabled (This) then
          Enable (This);
       end if;
@@ -563,7 +575,12 @@ package body STM32.USART is
          exit when not Busy (This);
       end loop;
 
-      Status := HAL.UART.Ok;
+      --  Return final transmission status
+      if Overrun_Indicated (This) then
+         Status := HAL.UART.Err_Error;
+      else
+         Status := HAL.UART.Ok;
+      end if;
    end Receive;
 
    -------------
@@ -579,6 +596,7 @@ package body STM32.USART is
    is
       pragma Unreferenced (Timeout);
    begin
+      Clear_Overrun (This);
 
       if not Enabled (This) then
          Enable (This);
@@ -590,7 +608,12 @@ package body STM32.USART is
          exit when not Busy (This);
       end loop;
 
-      Status := HAL.UART.Ok;
+      --  Return final transmission status
+      if Overrun_Indicated (This) then
+         Status := HAL.UART.Err_Error;
+      else
+         Status := HAL.UART.Ok;
+      end if;
    end Receive;
 
    -------------
@@ -612,10 +635,6 @@ package body STM32.USART is
       end loop;
 
       Incoming := UInt8 (This.Periph.RDR.RDR);
-
-      while Busy (This) loop
-         null;
-      end loop;
    end Receive;
 
    --  ----------------------
