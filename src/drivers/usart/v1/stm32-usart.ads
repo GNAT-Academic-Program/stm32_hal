@@ -181,6 +181,10 @@ package STM32.USART is
 
    procedure Clear_Overrun (This : USART_Port);
 
+   procedure Clear_Idle (This : USART_Port);
+
+   procedure Clear_Read_Data (This : USART_Port);
+
    function Is_Data_Frame_9bit (This : USART_Port) return Boolean;
 
    function Current_Mode (This : USART_Port) return USART_Mode;
