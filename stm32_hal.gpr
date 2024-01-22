@@ -53,6 +53,7 @@ project Stm32_Hal is
                           "src/drivers/pwm/v1/",
                           "src/drivers/syscfg/v1/",
                           "src/drivers/spi/v1/",
+                          "src/drivers/sdram/v1/",
                           "src/drivers/rtc/v1/",
                           "src/drivers/timers/v1/",
                           "src/drivers/i2c/v2/",
