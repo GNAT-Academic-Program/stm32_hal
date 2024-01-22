@@ -273,76 +273,6 @@ package body STM32.LTDC is
       end if;
    end Set_Layer_State;
 
-   type PLLSAI_DivR is new UInt2;
-   
-   ------------------
-   -- PLLSAI_Ready --
-   ------------------
-
-   function PLLSAI_Ready return Boolean is
-   begin
-      return RCC_Periph.CR.PLLSAIRDY;
-   end PLLSAI_Ready;
-
-   -------------------
-   -- Enable_PLLSAI --
-   -------------------
-
-   procedure Enable_PLLSAI is
-   begin
-      RCC_Periph.CR.PLLSAION := True;
-
-      --  Wait for PLLSAI activation
-      loop
-         exit when PLLSAI_Ready;
-      end loop;
-   end Enable_PLLSAI;
-
-   -------------------
-   -- Enable_PLLSAI --
-   -------------------
-
-   procedure Disable_PLLSAI is
-   begin
-      RCC_Periph.CR.PLLSAION := False;
-   end Disable_PLLSAI;
-
-   --------------------
-   -- PLLSAI_Enabled --
-   --------------------
-
-   function PLLSAI_Enabled return Boolean is
-   begin
-      return RCC_Periph.CR.PLLSAION and then RCC_Periph.CR.PLLSAIRDY;
-   end PLLSAI_Enabled;
-
-   ------------------------
-   -- Set_PLLSAI_Factors --
-   ------------------------
-
-   procedure Set_PLLSAI_Factors (LCD  : UInt3;
-                                 VCO  : UInt9;
-                                 DivR : PLLSAI_DivR)
-   is
-      PLLSAICFGR : PLLSAICFGR_Register;
-      SAI_On     : constant Boolean := PLLSAI_Enabled;
-   begin
-      if SAI_On then
-         Disable_PLLSAI;
-      end if;
-
-      PLLSAICFGR.PLLSAIR := LCD;
-      PLLSAICFGR.PLLSAIN := VCO;
-      RCC_Periph.PLLSAICFGR := PLLSAICFGR;
-
-      --  The exact bit name is device-specific
-      RCC_Periph.DKCFGR1.PLLSAIDIVR := UInt2 (DivR);
-
-      if SAI_On then
-         Enable_PLLSAI;
-      end if;
-   end Set_PLLSAI_Factors;
-
    ----------------
    -- Initialize --
    ----------------
@@ -360,14 +290,10 @@ package body STM32.LTDC is
       PLLSAI_R      : UInt3;
       DivR          : Natural)
    is
-      PLLSAI_DIV2  : constant PLLSAI_DivR := 0;
-      PLLSAI_DIV4  : constant PLLSAI_DivR := 1;
-      PLLSAI_DIV8  : constant PLLSAI_DivR := 2;
-      PLLSAI_DIV16 : constant PLLSAI_DivR := 3;
-
       DivR_Val : PLLSAI_DivR;
       Timing_H : UInt16;
       Timing_V : UInt16;
+
    begin
       if Initialized then
          return;

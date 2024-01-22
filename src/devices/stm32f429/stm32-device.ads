@@ -39,27 +39,26 @@
 --   COPYRIGHT(c) 2014 STMicroelectronics                                   --
 ------------------------------------------------------------------------------
 
---  This file provides declarations for devices on the STM32F42xxx MCUs
+--  This file provides declarations for devices on the STM32F42xx MCUs
 --  manufactured by ST Microelectronics.  For example, an STM32F429.
 
---  private with ADL_Config;
-
 with STM32_SVD; use STM32_SVD;
-with STM32_SVD.SAI;
-with STM32_SVD.SDMMC;
+with STM32_SVD.SDIO;
 
-with STM32.ADC;  use STM32.ADC;
-with STM32.DAC;  use STM32.DAC;
-with STM32.DMA;  use STM32.DMA;
-with STM32.GPIO; use STM32.GPIO;
---  with STM32.USARTs;  use STM32.USARTs;
-with STM32.I2C;     use STM32.I2C;
-with STM32.SDMMC;   use STM32.SDMMC;
+with STM32.DMA;     use STM32.DMA;
+with STM32.GPIO;    use STM32.GPIO;
+with STM32.ADC;     use STM32.ADC;
+with STM32.USARTs;  use STM32.USARTs;
 with STM32.SPI;     use STM32.SPI;
 with STM32.SPI.DMA; use STM32.SPI.DMA;
 with STM32.I2S;     use STM32.I2S;
+with STM32.I2C;     use STM32.I2C;
+with STM32.I2C.DMA; use STM32.I2C.DMA;
 with STM32.Timers;  use STM32.Timers;
+with STM32.DAC;     use STM32.DAC;
 with STM32.RTC;     use STM32.RTC;
+with STM32.CRC;     use STM32.CRC;
+--  with STM32.SDMMC;   use STM32.SDMMC;
 
 package STM32.Device is
    pragma Elaborate_Body;
@@ -296,53 +295,42 @@ package STM32.Device is
    GPIO_AF_TIM9_3      : constant GPIO_Alternate_Function;
    GPIO_AF_TIM10_3     : constant GPIO_Alternate_Function;
    GPIO_AF_TIM11_3     : constant GPIO_Alternate_Function;
-   GPIO_AF_LPTIM1_3    : constant GPIO_Alternate_Function;
-   GPIO_AF_CEC_3       : constant GPIO_Alternate_Function;
    GPIO_AF_I2C1_4      : constant GPIO_Alternate_Function;
    GPIO_AF_I2C2_4      : constant GPIO_Alternate_Function;
    GPIO_AF_I2C3_4      : constant GPIO_Alternate_Function;
-   GPIO_AF_I2C4_4      : constant GPIO_Alternate_Function;
-   GPIO_AF_CEC_4       : constant GPIO_Alternate_Function;
    GPIO_AF_SPI1_5      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI2_5      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI3_5      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI4_5      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI5_5      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI6_5      : constant GPIO_Alternate_Function;
+   GPIO_AF_SPI2_6      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI3_6      : constant GPIO_Alternate_Function;
    GPIO_AF_SAI1_6      : constant GPIO_Alternate_Function;
-   GPIO_AF_SPI2_7      : constant GPIO_Alternate_Function;
    GPIO_AF_SPI3_7      : constant GPIO_Alternate_Function;
    GPIO_AF_USART1_7    : constant GPIO_Alternate_Function;
    GPIO_AF_USART2_7    : constant GPIO_Alternate_Function;
    GPIO_AF_USART3_7    : constant GPIO_Alternate_Function;
-   GPIO_AF_UART5_7     : constant GPIO_Alternate_Function;
-   GPIO_AF_SPDIF_7     : constant GPIO_Alternate_Function;
-   GPIO_AF_SAI2_8      : constant GPIO_Alternate_Function;
+   GPIO_AF_I2S3ext_7   : constant GPIO_Alternate_Function;
    GPIO_AF_UART4_8     : constant GPIO_Alternate_Function;
    GPIO_AF_UART5_8     : constant GPIO_Alternate_Function;
    GPIO_AF_USART6_8    : constant GPIO_Alternate_Function;
    GPIO_AF_UART7_8     : constant GPIO_Alternate_Function;
    GPIO_AF_UART8_8     : constant GPIO_Alternate_Function;
-   GPIO_AF_SPDIF_8     : constant GPIO_Alternate_Function;
    GPIO_AF_CAN1_9      : constant GPIO_Alternate_Function;
    GPIO_AF_CAN2_9      : constant GPIO_Alternate_Function;
    GPIO_AF_TIM12_9     : constant GPIO_Alternate_Function;
    GPIO_AF_TIM13_9     : constant GPIO_Alternate_Function;
    GPIO_AF_TIM14_9     : constant GPIO_Alternate_Function;
-   GPIO_AF_QUADSPI_9   : constant GPIO_Alternate_Function;
    GPIO_AF_LTDC_9      : constant GPIO_Alternate_Function;
-   GPIO_AF_SAI2_10     : constant GPIO_Alternate_Function;
-   GPIO_AF_QUADSPI_10  : constant GPIO_Alternate_Function;
    GPIO_AF_OTG1_FS_10  : constant GPIO_Alternate_Function;
    GPIO_AF_OTG2_HS_10  : constant GPIO_Alternate_Function;
-   GPIO_AF_I2C4_11     : constant GPIO_Alternate_Function;
    GPIO_AF_ETH_11      : constant GPIO_Alternate_Function;
-   GPIO_AF_OTG1_FS_11  : constant GPIO_Alternate_Function;
    GPIO_AF_FMC_12      : constant GPIO_Alternate_Function;
-   GPIO_AF_SDMMC1_12   : constant GPIO_Alternate_Function;
+   GPIO_AF_SDIO_12     : constant GPIO_Alternate_Function;
    GPIO_AF_OTG2_FS_12  : constant GPIO_Alternate_Function;
    GPIO_AF_DCMI_13     : constant GPIO_Alternate_Function;
+   GPIO_AF_LTDC_13     : constant GPIO_Alternate_Function;
    GPIO_AF_LTDC_14     : constant GPIO_Alternate_Function;
    GPIO_AF_EVENTOUT_15 : constant GPIO_Alternate_Function;
 
@@ -372,29 +360,42 @@ package STM32.Device is
    DAC_1 : aliased Digital_To_Analog_Converter with
      Import, Volatile, Address => DAC_Base;
 
-   --  ??? Taken from the STM32F429 definition, TO BE CHECKED FOR THE F7
-   DAC_Channel_1_IO : constant GPIO_Point := PA4;
-   DAC_Channel_2_IO : constant GPIO_Point := PA5;
+   DAC_Channel_1_IO : GPIO_Point renames PA4;
+   DAC_Channel_2_IO : GPIO_Point renames PA5;
 
    procedure Enable_Clock (This : aliased in out Digital_To_Analog_Converter);
+
    procedure Reset (This : aliased in out Digital_To_Analog_Converter);
 
---     USART_1 : aliased USART with Import, Volatile, Address => USART1_Base;
---     USART_2 : aliased USART with Import, Volatile, Address => USART2_Base;
---     USART_3 : aliased USART with Import, Volatile, Address => USART3_Base;
---     UART_4  : aliased USART with Import, Volatile, Address => UART4_Base;
---     UART_5  : aliased USART with Import, Volatile, Address => UART5_Base;
---     USART_6 : aliased USART with Import, Volatile, Address => USART6_Base;
---     USART_7 : aliased USART with Import, Volatile, Address => UART7_Base;
---     USART_8 : aliased USART with Import, Volatile, Address => UART8_Base;
---
---     procedure Enable_Clock (This : aliased in out USART);
---
---     procedure Reset (This : aliased in out USART);
+   Internal_USART_1 : aliased Internal_USART with
+     Import, Volatile, Address => USART1_Base;
+   Internal_USART_2 : aliased Internal_USART with
+     Import, Volatile, Address => USART2_Base;
+   Internal_USART_3 : aliased Internal_USART with
+     Import, Volatile, Address => USART3_Base;
+   Internal_UART_4 : aliased Internal_USART with
+     Import, Volatile, Address => UART4_Base;
+   Internal_UART_5 : aliased Internal_USART with
+     Import, Volatile, Address => UART5_Base;
+   Internal_USART_6 : aliased Internal_USART with
+     Import, Volatile, Address => USART6_Base;
+   Internal_UART_7 : aliased Internal_USART with
+     Import, Volatile, Address => UART7_Base;
+   Internal_UART_8 : aliased Internal_USART with
+     Import, Volatile, Address => UART8_Base;
 
-   ---------
-   -- DMA --
-   ---------
+   USART_1 : aliased USART (Internal_USART_1'Access);
+   USART_2 : aliased USART (Internal_USART_2'Access);
+   USART_3 : aliased USART (Internal_USART_3'Access);
+   UART_4  : aliased USART (Internal_UART_4'Access);
+   UART_5  : aliased USART (Internal_UART_5'Access);
+   USART_6 : aliased USART (Internal_USART_6'Access);
+   UART_7  : aliased USART (Internal_UART_7'Access);
+   UART_8  : aliased USART (Internal_UART_8'Access);
+
+   procedure Enable_Clock (This : aliased in out USART);
+
+   procedure Reset (This : aliased in out USART);
 
    DMA_1 : aliased DMA_Controller with
      Import, Volatile, Address => DMA1_Base;
@@ -404,38 +405,31 @@ package STM32.Device is
    procedure Enable_Clock (This : aliased in out DMA_Controller);
    procedure Reset (This : aliased in out DMA_Controller);
 
-   ---------
-   -- I2C --
-   ---------
-
    Internal_I2C_Port_1 : aliased Internal_I2C_Port with
      Import, Volatile, Address => I2C1_Base;
    Internal_I2C_Port_2 : aliased Internal_I2C_Port with
      Import, Volatile, Address => I2C2_Base;
    Internal_I2C_Port_3 : aliased Internal_I2C_Port with
      Import, Volatile, Address => I2C3_Base;
-   Internal_I2C_Port_4 : aliased Internal_I2C_Port with
-     Import, Volatile, Address => I2C4_Base;
+
+   type I2C_Port_Id is (I2C_Id_1, I2C_Id_2, I2C_Id_3);
 
    I2C_1 : aliased I2C_Port (Internal_I2C_Port_1'Access);
    I2C_2 : aliased I2C_Port (Internal_I2C_Port_2'Access);
    I2C_3 : aliased I2C_Port (Internal_I2C_Port_3'Access);
-   I2C_4 : aliased I2C_Port (Internal_I2C_Port_4'Access);
 
-   type I2C_Port_Id is (I2C_Id_1, I2C_Id_2, I2C_Id_3, I2C_Id_4);
+   I2C_1_DMA : aliased I2C_Port_DMA (Internal_I2C_Port_1'Access);
+   I2C_2_DMA : aliased I2C_Port_DMA (Internal_I2C_Port_2'Access);
+   I2C_3_DMA : aliased I2C_Port_DMA (Internal_I2C_Port_3'Access);
 
    function As_Port_Id (Port : I2C_Port'Class) return I2C_Port_Id with
      Inline;
 
-   procedure Enable_Clock (This : aliased I2C_Port'Class);
+   procedure Enable_Clock (This : I2C_Port'Class);
    procedure Enable_Clock (This : I2C_Port_Id);
 
    procedure Reset (This : I2C_Port'Class);
    procedure Reset (This : I2C_Port_Id);
-
-   ---------
-   -- SPI --
-   ---------
 
    Internal_SPI_1 : aliased Internal_SPI_Port with
      Import, Volatile, Address => SPI1_Base;
@@ -479,92 +473,79 @@ package STM32.Device is
      Import, Volatile, Address => SPI5_Base;
    Internal_I2S_6 : aliased Internal_I2S_Port with
      Import, Volatile, Address => SPI6_Base;
+   Internal_I2S_2_Ext : aliased Internal_I2S_Port with
+     Import, Volatile, Address => I2S2ext_Base;
+   Internal_I2S_3_Ext : aliased Internal_I2S_Port with
+     Import, Volatile, Address => I2S3ext_Base;
 
-   I2S_1 : aliased I2S_Port (Internal_I2S_1'Access, Extended => False);
-   I2S_2 : aliased I2S_Port (Internal_I2S_2'Access, Extended => False);
-   I2S_3 : aliased I2S_Port (Internal_I2S_3'Access, Extended => False);
-   I2S_4 : aliased I2S_Port (Internal_I2S_4'Access, Extended => False);
-   I2S_5 : aliased I2S_Port (Internal_I2S_5'Access, Extended => False);
-   I2S_6 : aliased I2S_Port (Internal_I2S_6'Access, Extended => False);
+   I2S_1     : aliased I2S_Port (Internal_I2S_1'Access, Extended => False);
+   I2S_2     : aliased I2S_Port (Internal_I2S_2'Access, Extended => False);
+   I2S_3     : aliased I2S_Port (Internal_I2S_3'Access, Extended => False);
+   I2S_4     : aliased I2S_Port (Internal_I2S_4'Access, Extended => False);
+   I2S_5     : aliased I2S_Port (Internal_I2S_5'Access, Extended => False);
+   I2S_6     : aliased I2S_Port (Internal_I2S_6'Access, Extended => False);
+   I2S_2_Ext : aliased I2S_Port (Internal_I2S_2_Ext'Access, Extended => True);
+   I2S_3_Ext : aliased I2S_Port (Internal_I2S_3_Ext'Access, Extended => True);
 
    procedure Enable_Clock (This : I2S_Port);
    procedure Reset (This : in out I2S_Port);
 
-   ------------
-   -- Timers --
-   ------------
-
    Timer_1 : aliased Timer with
-     Volatile, Address => TIM1_Base;
-   pragma Import (Ada, Timer_1);
+     Import, Volatile, Address => TIM1_Base;
    Timer_2 : aliased Timer with
-     Volatile, Address => TIM2_Base;
-   pragma Import (Ada, Timer_2);
+     Import, Volatile, Address => TIM2_Base;
    Timer_3 : aliased Timer with
-     Volatile, Address => TIM3_Base;
-   pragma Import (Ada, Timer_3);
+     Import, Volatile, Address => TIM3_Base;
    Timer_4 : aliased Timer with
-     Volatile, Address => TIM4_Base;
-   pragma Import (Ada, Timer_4);
+     Import, Volatile, Address => TIM4_Base;
    Timer_5 : aliased Timer with
-     Volatile, Address => TIM5_Base;
-   pragma Import (Ada, Timer_5);
+     Import, Volatile, Address => TIM5_Base;
    Timer_6 : aliased Timer with
-     Volatile, Address => TIM6_Base;
-   pragma Import (Ada, Timer_6);
+     Import, Volatile, Address => TIM6_Base;
    Timer_7 : aliased Timer with
-     Volatile, Address => TIM7_Base;
-   pragma Import (Ada, Timer_7);
+     Import, Volatile, Address => TIM7_Base;
    Timer_8 : aliased Timer with
-     Volatile, Address => TIM8_Base;
-   pragma Import (Ada, Timer_8);
+     Import, Volatile, Address => TIM8_Base;
    Timer_9 : aliased Timer with
-     Volatile, Address => TIM9_Base;
-   pragma Import (Ada, Timer_9);
+     Import, Volatile, Address => TIM9_Base;
    Timer_10 : aliased Timer with
-     Volatile, Address => TIM10_Base;
-   pragma Import (Ada, Timer_10);
+     Import, Volatile, Address => TIM10_Base;
    Timer_11 : aliased Timer with
-     Volatile, Address => TIM11_Base;
-   pragma Import (Ada, Timer_11);
+     Import, Volatile, Address => TIM11_Base;
    Timer_12 : aliased Timer with
-     Volatile, Address => TIM12_Base;
-   pragma Import (Ada, Timer_12);
+     Import, Volatile, Address => TIM12_Base;
    Timer_13 : aliased Timer with
-     Volatile, Address => TIM13_Base;
-   pragma Import (Ada, Timer_13);
+     Import, Volatile, Address => TIM13_Base;
    Timer_14 : aliased Timer with
-     Volatile, Address => TIM14_Base;
-   pragma Import (Ada, Timer_14);
+     Import, Volatile, Address => TIM14_Base;
 
    procedure Enable_Clock (This : in out Timer);
+
    procedure Reset (This : in out Timer);
 
-   -----------
-   -- Audio --
-   -----------
+  --   -----------
+  --   -- SDMMC --
+  --   -----------
 
-   subtype SAI_Port is STM32_SVD.SAI.SAI_Peripheral;
+  --   SDIO : aliased SDMMC_Controller (STM32_SVD.SDIO.SDIO_Periph'Access);
 
-   SAI_1 : SAI_Port renames STM32_SVD.SAI.SAI1_Periph;
-   SAI_2 : SAI_Port renames STM32_SVD.SAI.SAI2_Periph;
+  --   type SDIO_Clock_Source is (Src_Sysclk, Src_48Mhz);
 
-   procedure Enable_Clock (This : in out SAI_Port);
-   procedure Reset (This : in out SAI_Port);
-   function Get_Input_Clock (Periph : SAI_Port) return UInt32;
+  --   procedure Enable_Clock (This : in out SDMMC_Controller);
+  --   procedure Reset (This : in out SDMMC_Controller);
 
-   -----------
-   -- SDMMC --
-   -----------
+   ---------
+   -- CRC --
+   ---------
 
-   type SDMMC_Clock_Source is (Src_Sysclk, Src_48Mhz);
+   CRC_Unit : CRC_32 with
+     Import, Volatile, Address => CRC_Base;
 
-   SDMMC_1 : aliased SDMMC_Controller (STM32_SVD.SDMMC.SDMMC_Periph'Access);
+   procedure Enable_Clock (This : in out CRC_32);
 
-   procedure Enable_Clock (This : in out SDMMC_Controller);
-   procedure Reset (This : in out SDMMC_Controller);
-   procedure Set_Clock_Source
-     (This : in out SDMMC_Controller; Src : SDMMC_Clock_Source);
+   procedure Disable_Clock (This : in out CRC_32);
+
+   procedure Reset (This : in out CRC_32);
 
    -----------------------------
    -- Reset and Clock Control --
@@ -595,6 +576,7 @@ package STM32.Device is
      Post => not PLLI2S_Enabled;
 
    type PLLSAI_DivR is new UInt2;
+
    PLLSAI_DIV2  : constant PLLSAI_DivR := 0;
    PLLSAI_DIV4  : constant PLLSAI_DivR := 1;
    PLLSAI_DIV8  : constant PLLSAI_DivR := 2;
@@ -603,22 +585,18 @@ package STM32.Device is
    procedure Set_PLLSAI_Factors (LCD : UInt3; VCO : UInt9; DivR : PLLSAI_DivR);
 
    procedure Enable_PLLSAI;
+
    procedure Disable_PLLSAI;
+
    function PLLSAI_Ready return Boolean;
 
-   subtype DIVQ is Natural range 1 .. 32;
-
-   procedure Configure_SAI_I2S_Clock
-     (Periph : SAI_Port; PLLI2SN : UInt9; PLLI2SQ : UInt4; PLLI2SDIVQ : DIVQ);
-
    procedure Enable_DCMI_Clock;
+
    procedure Reset_DCMI;
 
    RTC : aliased RTC_Device;
 
 private
-
-   -- HSE_VALUE : constant UInt32 := ADL_Config.High_Speed_External_Clock;
 
    GPIO_AF_RTC_50Hz_0  : constant GPIO_Alternate_Function := 0;
    GPIO_AF_MCO_0       : constant GPIO_Alternate_Function := 0;
@@ -634,53 +612,42 @@ private
    GPIO_AF_TIM9_3      : constant GPIO_Alternate_Function := 3;
    GPIO_AF_TIM10_3     : constant GPIO_Alternate_Function := 3;
    GPIO_AF_TIM11_3     : constant GPIO_Alternate_Function := 3;
-   GPIO_AF_LPTIM1_3    : constant GPIO_Alternate_Function := 3;
-   GPIO_AF_CEC_3       : constant GPIO_Alternate_Function := 3;
    GPIO_AF_I2C1_4      : constant GPIO_Alternate_Function := 4;
    GPIO_AF_I2C2_4      : constant GPIO_Alternate_Function := 4;
    GPIO_AF_I2C3_4      : constant GPIO_Alternate_Function := 4;
-   GPIO_AF_I2C4_4      : constant GPIO_Alternate_Function := 4;
-   GPIO_AF_CEC_4       : constant GPIO_Alternate_Function := 4;
    GPIO_AF_SPI1_5      : constant GPIO_Alternate_Function := 5;
    GPIO_AF_SPI2_5      : constant GPIO_Alternate_Function := 5;
    GPIO_AF_SPI3_5      : constant GPIO_Alternate_Function := 5;
    GPIO_AF_SPI4_5      : constant GPIO_Alternate_Function := 5;
    GPIO_AF_SPI5_5      : constant GPIO_Alternate_Function := 5;
    GPIO_AF_SPI6_5      : constant GPIO_Alternate_Function := 5;
+   GPIO_AF_SPI2_6      : constant GPIO_Alternate_Function := 6;
    GPIO_AF_SPI3_6      : constant GPIO_Alternate_Function := 6;
    GPIO_AF_SAI1_6      : constant GPIO_Alternate_Function := 6;
-   GPIO_AF_SPI2_7      : constant GPIO_Alternate_Function := 7;
    GPIO_AF_SPI3_7      : constant GPIO_Alternate_Function := 7;
    GPIO_AF_USART1_7    : constant GPIO_Alternate_Function := 7;
    GPIO_AF_USART2_7    : constant GPIO_Alternate_Function := 7;
    GPIO_AF_USART3_7    : constant GPIO_Alternate_Function := 7;
-   GPIO_AF_UART5_7     : constant GPIO_Alternate_Function := 7;
-   GPIO_AF_SPDIF_7     : constant GPIO_Alternate_Function := 8;
-   GPIO_AF_SAI2_8      : constant GPIO_Alternate_Function := 8;
+   GPIO_AF_I2S3ext_7   : constant GPIO_Alternate_Function := 7;
    GPIO_AF_UART4_8     : constant GPIO_Alternate_Function := 8;
    GPIO_AF_UART5_8     : constant GPIO_Alternate_Function := 8;
    GPIO_AF_USART6_8    : constant GPIO_Alternate_Function := 8;
    GPIO_AF_UART7_8     : constant GPIO_Alternate_Function := 8;
    GPIO_AF_UART8_8     : constant GPIO_Alternate_Function := 8;
-   GPIO_AF_SPDIF_8     : constant GPIO_Alternate_Function := 8;
    GPIO_AF_CAN1_9      : constant GPIO_Alternate_Function := 9;
    GPIO_AF_CAN2_9      : constant GPIO_Alternate_Function := 9;
    GPIO_AF_TIM12_9     : constant GPIO_Alternate_Function := 9;
    GPIO_AF_TIM13_9     : constant GPIO_Alternate_Function := 9;
    GPIO_AF_TIM14_9     : constant GPIO_Alternate_Function := 9;
-   GPIO_AF_QUADSPI_9   : constant GPIO_Alternate_Function := 9;
    GPIO_AF_LTDC_9      : constant GPIO_Alternate_Function := 9;
-   GPIO_AF_SAI2_10     : constant GPIO_Alternate_Function := 10;
-   GPIO_AF_QUADSPI_10  : constant GPIO_Alternate_Function := 10;
    GPIO_AF_OTG1_FS_10  : constant GPIO_Alternate_Function := 10;
    GPIO_AF_OTG2_HS_10  : constant GPIO_Alternate_Function := 10;
-   GPIO_AF_I2C4_11     : constant GPIO_Alternate_Function := 11;
    GPIO_AF_ETH_11      : constant GPIO_Alternate_Function := 11;
-   GPIO_AF_OTG1_FS_11  : constant GPIO_Alternate_Function := 11;
    GPIO_AF_FMC_12      : constant GPIO_Alternate_Function := 12;
-   GPIO_AF_SDMMC1_12   : constant GPIO_Alternate_Function := 12;
+   GPIO_AF_SDIO_12     : constant GPIO_Alternate_Function := 12;
    GPIO_AF_OTG2_FS_12  : constant GPIO_Alternate_Function := 12;
    GPIO_AF_DCMI_13     : constant GPIO_Alternate_Function := 13;
+   GPIO_AF_LTDC_13     : constant GPIO_Alternate_Function := 13;
    GPIO_AF_LTDC_14     : constant GPIO_Alternate_Function := 14;
    GPIO_AF_EVENTOUT_15 : constant GPIO_Alternate_Function := 15;
 
