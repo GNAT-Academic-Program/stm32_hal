@@ -1,10 +1,12 @@
 name = "stm32_hal"
-description = "Shiny new project"
-version = "0.1.0-dev"
+description = "stm32 : devices, drivers, svd"
+version = "0.1.0"
 
-authors = ["Olivier Henley"]
+authors = ["AdaCore"]
 maintainers = ["Olivier Henley <olivier.henley@gmail.com>"]
 maintainers-logins = ["ohenley"]
+website="https://github.com/GNAT-Academic-Program/stm32_hal"
+tags = ["embedded", "stm32", "devices", "drivers", "svd"]
 
 [[depends-on]]
 cortex_m = "0.5.0"
