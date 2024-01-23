@@ -1,6 +1,7 @@
 name = "stm32_hal"
 description = "stm32 : devices, drivers, svd"
 version = "0.1.0"
+licenses = "BSD-3-Clause"
 
 authors = ["AdaCore"]
 maintainers = ["Olivier Henley <olivier.henley@gmail.com>"]
