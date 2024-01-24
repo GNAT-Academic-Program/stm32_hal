@@ -3,8 +3,8 @@
 This repository contains STM32 HALs, Devices and Drivers for Alire, streamlining hardware interaction for Ada and C applications on STM32 SoC.
 
 ## Documentation
-- [STM32F429 SoC Official Doc]()
-- [STM32F746 SoC Official Doc]()
+- [STM32F429 SoC Official Doc](https://github.com/GNAT-Academic-Program/stm32_hal/tree/main/doc/stm32f429)
+- [STM32F746 SoC Official Doc](https://github.com/GNAT-Academic-Program/stm32_hal/tree/main/doc/stm32f746)
 
 ## Demos
 This package is part of a library chain. Usually, you create applications building upon this crate:
