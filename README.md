@@ -2,6 +2,10 @@
 
 This repository contains STM32 HALs, Devices and Drivers for Alire, streamlining hardware interaction for Ada and C applications on STM32 SoC.
 
+## Documentation
+- [STM32F429 SoC Official Doc]()
+- [STM32F746 SoC Official Doc]()
+
 ## Demos
 This package is part of a library chain. Usually, you create applications building upon this crate:
 - [stm32_blinky_demo](https://github.com/GNAT-Academic-Program/stm32_blinky_demo)
