@@ -18,3 +18,4 @@ device = { type = "Enum", values = ["stm32f746", "stm32f429"], default = "stm32f
 
 #[configuration.values]
 #cortex_m.core = "m4f"
+
