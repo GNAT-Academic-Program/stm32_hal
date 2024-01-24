@@ -1,6 +1,6 @@
 # STM32 - HAL, Devices, Drivers (Alire)
 
-This repository contains STM32 HALs, devices and drivers for Alire, streamlining hardware interaction for Ada and C applications on the board.
+This repository contains STM32 HALs, Devices and Drivers for Alire, streamlining hardware interaction for Ada and C applications on STM32 SoC.
 
 ## Demos
 This package is part of a library chain. Usually, you create applications building upon this crate:
