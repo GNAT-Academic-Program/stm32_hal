@@ -52,14 +52,15 @@ with STM32.ADC;  use STM32.ADC;
 with STM32.DAC;  use STM32.DAC;
 with STM32.DMA;  use STM32.DMA;
 with STM32.GPIO; use STM32.GPIO;
-with STM32.USART;   use STM32.USART;
-with STM32.I2C;     use STM32.I2C;
-with STM32.SDMMC;   use STM32.SDMMC;
-with STM32.SPI;     use STM32.SPI;
-with STM32.SPI.DMA; use STM32.SPI.DMA;
-with STM32.I2S;     use STM32.I2S;
-with STM32.Timers;  use STM32.Timers;
-with STM32.RTC;     use STM32.RTC;
+with STM32.USART;     use STM32.USART;
+with STM32.USART.DMA; use STM32.USART.DMA;
+with STM32.I2C;       use STM32.I2C;
+with STM32.SDMMC;     use STM32.SDMMC;
+with STM32.SPI;       use STM32.SPI;
+with STM32.SPI.DMA;   use STM32.SPI.DMA;
+with STM32.I2S;       use STM32.I2S;
+with STM32.Timers;    use STM32.Timers;
+with STM32.RTC;       use STM32.RTC;
 
 package STM32.Device is
    pragma Elaborate_Body;
@@ -404,6 +405,15 @@ package STM32.Device is
    USART_6 : aliased USART_Port (Internal_USART_6'Access);
    UART_7  : aliased USART_Port (Internal_UART_7'Access);
    UART_8  : aliased USART_Port (Internal_UART_8'Access);
+
+   USART_1_DMA : aliased USART_Port_DMA (Internal_USART_1'Access);
+   USART_2_DMA : aliased USART_Port_DMA (Internal_USART_2'Access);
+   USART_3_DMA : aliased USART_Port_DMA (Internal_USART_3'Access);
+   UART_4_DMA  : aliased USART_Port_DMA (Internal_UART_4'Access);
+   UART_5_DMA  : aliased USART_Port_DMA (Internal_UART_5'Access);
+   USART_6_DMA : aliased USART_Port_DMA (Internal_USART_6'Access);
+   UART_7_DMA  : aliased USART_Port_DMA (Internal_UART_7'Access);
+   UART_8_DMA  : aliased USART_Port_DMA (Internal_UART_8'Access);
 
    type USART_Port_Id is (
       USART_Id_1,

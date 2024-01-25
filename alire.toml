@@ -29,8 +29,8 @@ values = [
     "stm32f429",
 ]
 
-[configuration.values]
-cortex_m.core = "m7f"
+# [configuration.values]
+# cortex_m.core = "m7f"
 
 [[depends-on]]
 cortex_m = "0.5.0"
