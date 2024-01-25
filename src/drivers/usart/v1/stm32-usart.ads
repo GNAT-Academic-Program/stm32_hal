@@ -45,6 +45,8 @@
 
 private with STM32_SVD.USART;
 with HAL.UART;
+with STM32.DMA;
+with STM32.DMA.Interrupts; use STM32.DMA.Interrupts;
 with System;
 
 package STM32.USART is
@@ -86,6 +88,15 @@ package STM32.USART is
      (Oversampling_16x,
       Oversampling_8x);
 
+   type USART_DMA_Configuration is record
+      TX_Controller          : DMA_Interrupt_Controller_Access := null;
+      TX_Channel             : DMA.DMA_Channel_Selector := DMA.Channel_0;
+      TX_Priority            : DMA.DMA_Priority_Level   := DMA.Priority_Medium;
+      RX_Controller          : DMA_Interrupt_Controller_Access := null;
+      RX_Channel             : DMA.DMA_Channel_Selector := DMA.Channel_0;
+      RX_Priority            : DMA.DMA_Priority_Level   := DMA.Priority_Medium;
+   end record;
+
    type USART_Configuration is record
       Direction           : USART_Data_Direction    := RX_TX;
       Mode                : USART_Mode              := Asynchronous;
@@ -95,7 +106,7 @@ package STM32.USART is
       Parity              : USART_Parity            := No_Parity;
       Oversampling        : USART_Oversampling      := Oversampling_16x;
       Baud_Rate           : UInt32;
-      --  Enable_DMA          : Boolean                 := False;
+      DMA_Config          : access USART_DMA_Configuration := null;
    end record;
 
    procedure Configure (This : in out USART_Port; Conf : USART_Configuration);
@@ -115,6 +126,14 @@ package STM32.USART is
 
    function Data (This : USART_Port) return UInt8
      with Inline;
+
+   function DMA_Enabled (This : USART_Port) return Boolean;
+
+   procedure Enable_DMA
+     (This : in out USART_Port;
+      DMA_Config : USART_DMA_Configuration);
+
+   procedure Disable_DMA (This : USART_Port);
 
    function Is_Busy (This : USART_Port) return Boolean
      with Inline;

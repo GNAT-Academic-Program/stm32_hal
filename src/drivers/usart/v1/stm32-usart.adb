@@ -44,6 +44,7 @@ with Ada.Unchecked_Conversion;
 with System; use System;
 with STM32_SVD.USART; use STM32_SVD.USART;
 with STM32.Device; use STM32.Device;
+with STM32.DMA; use STM32.DMA;
 
 package body STM32.USART is
 
@@ -211,6 +212,56 @@ package body STM32.USART is
    begin
       return UInt8 (UInt9'(Data (This)));
    end Data;
+
+   -----------------
+   -- DMA_Enabled --
+   -----------------
+
+   function DMA_Enabled (This : USART_Port) return Boolean is
+   begin
+      return This.Periph.CR3.DMAR or else This.Periph.CR3.DMAT;
+   end DMA_Enabled;
+
+   ----------------
+   -- Enable_DMA --
+   ----------------
+
+   procedure Enable_DMA (
+      This : in out USART_Port;
+      DMA_Config : USART_DMA_Configuration
+   ) is
+      DMA_P  : DMA.DMA_Controller      renames DMA_1;
+      TX_Stream_Config : DMA.DMA_Stream_Configuration;
+      RX_Stream_Config : DMA.DMA_Stream_Configuration;
+   begin
+      This.Periph.CR3.DMAR := This.Periph.CR1.RE;
+      This.Periph.CR3.DMAT := This.Periph.CR1.TE;
+
+      TX_Stream_Config.Channel := DMA_Config.TX_Channel;
+      TX_Stream_Config.Direction := DMA.Memory_To_Peripheral;
+      TX_Stream_Config.Increment_Memory_Address := True;
+      TX_Stream_Config.Operation_Mode := DMA.Peripheral_Flow_Control_Mode;
+      TX_Stream_Config.Priority := DMA_Config.TX_Priority;
+
+      RX_Stream_Config.Channel := DMA_Config.RX_Channel;
+      RX_Stream_Config.Direction := DMA.Peripheral_To_Memory;
+      RX_Stream_Config.Increment_Memory_Address := True;
+      RX_Stream_Config.Operation_Mode := DMA.Peripheral_Flow_Control_Mode;
+      RX_Stream_Config.Priority := DMA_Config.RX_Priority;
+
+      DMA.Configure (DMA_P, DMA_Config.TX_Controller.Stream, TX_Stream_Config);
+      DMA.Configure (DMA_P, DMA_Config.RX_Controller.Stream, RX_Stream_Config);
+   end Enable_DMA;
+
+   -----------------
+   -- Disable DMA --
+   -----------------
+
+   procedure Disable_DMA (This : USART_Port) is
+   begin
+      This.Periph.CR3.DMAR := False;
+      This.Periph.CR3.DMAT := False;
+   end Disable_DMA;
 
    -------------
    -- Is_Busy --
@@ -468,7 +519,7 @@ package body STM32.USART is
       end if;
 
       if not Tx_Is_Complete (This) then
-         -- Transmission is already ongoing (likely through interrupts or DMA)
+         --  Transmission is already ongoing (likely through interrupts or DMA)
          Status := HAL.UART.Busy;
          return;
       end if;
@@ -478,11 +529,6 @@ package body STM32.USART is
       --  Wait until TC flag is set to indicate end of transmission
       loop
          exit when Tx_Is_Complete (This);
-      end loop;
-
-      --  Wait until Busy flag is reset before disabling USART
-      loop
-         exit when not Busy (This);
       end loop;
 
       Status := HAL.UART.Ok;
@@ -512,11 +558,6 @@ package body STM32.USART is
          exit when Tx_Is_Complete (This);
       end loop;
 
-      --  Wait until Busy flag is reset before disabling USART
-      loop
-         exit when not Busy (This);
-      end loop;
-
       Status := HAL.UART.Ok;
    end Transmit;
 
@@ -540,11 +581,6 @@ package body STM32.USART is
       --  Wait until TC flag is set to indicate end of transmission
       loop
          exit when Tx_Is_Complete (This);
-      end loop;
-
-      --  Wait until Busy flag is reset before disabling USART
-      loop
-         exit when not Busy (This);
       end loop;
 
       Clear_Overrun (This);
@@ -571,6 +607,7 @@ package body STM32.USART is
 
       Receive_8bit_Mode (This, Data);
 
+      --  Wait until BUSY flag is unset to indicate end of reception
       loop
          exit when not Busy (This);
       end loop;
@@ -604,6 +641,7 @@ package body STM32.USART is
 
       Receive_9bit_Mode (This, Data);
 
+      --  Wait until BUSY flag is unset to indicate end of reception
       loop
          exit when not Busy (This);
       end loop;
