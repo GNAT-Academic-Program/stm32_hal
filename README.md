@@ -12,9 +12,8 @@ This package is part of a library chain. Usually, you create applications buildi
 
 ## Prerequisite
 
-- [Alire](https://github.com/alire-project/alire/releases/tag/v1.2.2)
-
-## --> [Instructions to Use](https://github.com/GNAT-Academic-Program#install-alire-an-ada-package-manager) <--
+- Alire [Setup Instructions](https://github.com/GNAT-Academic-Program#install-alire-an-ada-package-manager)
+- Alire GAP index [Setup Instructions](https://github.com/GNAT-Academic-Program#add-the-gap-alire-index-important)
 
 ## Contributing
 
