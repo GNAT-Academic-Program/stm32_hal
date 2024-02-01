@@ -260,4 +260,23 @@ package body STM32.USART.DMA is
          Status := HAL.UART.Err_Error;
       end if;
    end Receive;
+
+   --------------
+   -- Abortion --
+   --------------
+
+   procedure Abort_Transmit (This : in out USART_Port_DMA)
+   is
+      Result : DMA_Error_Code;
+   begin
+      This.TX_Controller.Abort_Transfer (Result);
+   end Abort_Transmit;
+
+   procedure Abort_Receive (This : in out USART_Port_DMA)
+   is
+      Result : DMA_Error_Code;
+   begin
+      This.RX_Controller.Abort_Transfer (Result);
+   end Abort_Receive;
+
 end STM32.USART.DMA;

@@ -55,6 +55,10 @@ package STM32.USART.DMA is
    --    (This     : in out USART_Port_DMA;
    --     Incoming : out UInt8);
 
+   procedure Abort_Transmit (This : in out USART_Port_DMA);
+
+   procedure Abort_Receive (This : in out USART_Port_DMA);
+
 private
 
    type USART_Port_DMA is limited new USART_Port with record
