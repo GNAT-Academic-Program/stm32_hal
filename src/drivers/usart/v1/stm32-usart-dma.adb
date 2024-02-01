@@ -96,6 +96,7 @@ package body STM32.USART.DMA is
 
             case DMA_Status is
                when DMA_No_Error => Status := HAL.UART.Ok;
+               when DMA_Timeout_Error => Status := HAL.UART.Err_Timeout;
                when others => Status := HAL.UART.Err_Error;
             end case;
          end;
@@ -145,6 +146,7 @@ package body STM32.USART.DMA is
 
             case DMA_Status is
                when DMA_No_Error => Status := HAL.UART.Ok;
+               when DMA_Timeout_Error => Status := HAL.UART.Err_Timeout;
                when others => Status := HAL.UART.Err_Error;
             end case;
          end;
@@ -195,6 +197,7 @@ package body STM32.USART.DMA is
 
             case DMA_Status is
                when DMA_No_Error => Status := HAL.UART.Ok;
+               when DMA_Timeout_Error => Status := HAL.UART.Err_Timeout;
                when others => Status := HAL.UART.Err_Error;
             end case;
          end;
@@ -250,6 +253,7 @@ package body STM32.USART.DMA is
 
             case DMA_Status is
                when DMA_No_Error => Status := HAL.UART.Ok;
+               when DMA_Timeout_Error => Status := HAL.UART.Err_Timeout;
                when others => Status := HAL.UART.Err_Error;
             end case;
          end;
