@@ -35,17 +35,25 @@ package body STM32.USART.DMA is
       This.RX_Controller := DMA_Config.RX_Controller;
    end Enable_DMA;
 
-   ---------------------------
+   ------------------------------------
    -- Set_Polling_Threshold --
-   ---------------------------
+   ------------------------------------
 
-   procedure Set_Polling_Threshold
+   procedure Set_Transmit_Polling_Threshold
      (This      : in out USART_Port_DMA;
       Threshold : Natural)
    is
    begin
-      This.Threshold := Threshold;
-   end Set_Polling_Threshold;
+      This.TX_Threshold := Threshold;
+   end Set_Transmit_Polling_Threshold;
+
+   procedure Set_Receive_Polling_Threshold
+     (This      : in out USART_Port_DMA;
+      Threshold : Natural)
+   is
+   begin
+      This.RX_Threshold := Threshold;
+   end Set_Receive_Polling_Threshold;
 
    --------------
    -- Transmit --
@@ -70,7 +78,7 @@ package body STM32.USART.DMA is
          return;
       end if;
 
-      if not This.Periph.CR3.DMAT or else Data'Length < This.Threshold then
+      if not This.Periph.CR3.DMAT or else Data'Length < This.TX_Threshold then
          Send_8bit_Mode (This, Data);
 
          --  Wait until TC flag is set to indicate end of transmission
@@ -120,7 +128,7 @@ package body STM32.USART.DMA is
          Enable (This);
       end if;
 
-      if not This.Periph.CR3.DMAT or else Data'Length < This.Threshold then
+      if not This.Periph.CR3.DMAT or else Data'Length < This.TX_Threshold then
          Send_9bit_Mode (This, Data);
 
          --  Wait until TC flag is set to indicate end of transmission
@@ -172,7 +180,7 @@ package body STM32.USART.DMA is
          Enable (This);
       end if;
 
-      if not This.Periph.CR3.DMAR or else Data'Length < This.Threshold then
+      if not This.Periph.CR3.DMAR or else Data'Length < This.RX_Threshold then
          Receive_8bit_Mode (This, Data);
 
          --  Wait until BUSY flag is unset to indicate end of reception
@@ -228,7 +236,7 @@ package body STM32.USART.DMA is
          Enable (This);
       end if;
 
-      if not This.Periph.CR3.DMAR or else Data'Length < This.Threshold then
+      if not This.Periph.CR3.DMAR or else Data'Length < This.RX_Threshold then
          Receive_9bit_Mode (This, Data);
 
          --  Wait until BUSY flag is unset to indicate end of reception
