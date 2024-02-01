@@ -55,9 +55,13 @@ package STM32.USART.DMA is
    --    (This     : in out USART_Port_DMA;
    --     Incoming : out UInt8);
 
-   procedure Abort_Transmit (This : in out USART_Port_DMA);
+   procedure Abort_Transmit
+     (This : in out USART_Port_DMA;
+      Status : out HAL.UART.UART_Status);
 
-   procedure Abort_Receive (This : in out USART_Port_DMA);
+   procedure Abort_Receive
+     (This : in out USART_Port_DMA;
+      Status : out HAL.UART.UART_Status);
 
 private
 
