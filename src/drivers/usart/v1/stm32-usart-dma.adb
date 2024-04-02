@@ -35,9 +35,9 @@ package body STM32.USART.DMA is
       This.RX_Controller := DMA_Config.RX_Controller;
    end Enable_DMA;
 
-   ------------------------------------
+   ---------------------------
    -- Set_Polling_Threshold --
-   ------------------------------------
+   ---------------------------
 
    procedure Set_Transmit_Polling_Threshold
      (This      : in out USART_Port_DMA;
