@@ -17,8 +17,8 @@ project Stm32_Hal is
                           "src/drivers/dma/v1/",
                           "src/drivers/dma_interrupts/v1/",
                           "src/drivers/dma2d/v1/",
-                          "src/drivers/dma2d/v1/",
                           "src/drivers/fmc/v1/",
+                          "src/drivers/device_id/v1/",
                           "src/drivers/gpio/v1/",
                           "src/drivers/ltdc/v1/",
                           "src/drivers/power_control/v1/",
@@ -35,6 +35,32 @@ project Stm32_Hal is
                           "src/drivers/usart/v1/",
                           "src/drivers/syscfg/v1/",
                           "src/drivers/exti/v1/");
+      when "stm32f429" =>
+         Drivers_Dirs := Drivers_Dirs &
+                         ("src/drivers/adc/v1/",
+                          "src/drivers/dac/v1/",
+                          "src/drivers/dma/v1/",
+                          "src/drivers/dma_interrupts/v1/",
+                          "src/drivers/dma2d/v1/",
+                          "src/drivers/fmc/v1/",
+                          "src/drivers/device_id/v1/",
+                          "src/drivers/exti/v1/",
+                          "src/drivers/gpio/v1/",
+                          "src/drivers/ltdc/v1/",
+                          "src/drivers/i2s/v1/",
+                          "src/drivers/rng/v1/",
+                          "src/drivers/crc/v1/",
+                          "src/drivers/iwdg/v1/",
+                          "src/drivers/pwm/v1/",
+                          "src/drivers/syscfg/v1/",
+                          "src/drivers/spi/v1/",
+                          "src/drivers/sdram/v1/",
+                          "src/drivers/rtc/v1/",
+                          "src/drivers/timers/v1/",
+                          "src/drivers/i2c/v2/",
+                          "src/drivers/usarts/v2/",
+                          "src/drivers/power_control/v2/",
+                          "src/drivers/rcc/v2/");
    end case;
    Device_Dirs := ("src/devices/" & stm32_hal_config.DEVICE & "/");
 

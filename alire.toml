@@ -1,16 +1,17 @@
-authors = [
-    "Olivier Henley",
-    "Alan Everett"
-]
-description = "Shiny new project"
-maintainers = [
-    "Olivier Henley <olivier.henley@gmail.com>",
-]
-maintainers-logins = [
-    "ohenley",
-]
 name = "stm32_hal"
-version = "0.1.0-dev"
+description = "stm32 : devices, drivers, svd"
+version = "0.1.0"
+licenses = "BSD-3-Clause"
+
+authors = ["AdaCore"]
+maintainers = ["Olivier Henley <olivier.henley@gmail.com>"]
+maintainers-logins = ["ohenley"]
+website="https://github.com/GNAT-Academic-Program/stm32_hal"
+tags = ["embedded", "stm32", "devices", "drivers", "svd"]
+
+[[depends-on]]
+cortex_m = "0.5.0"
+hal = "~0.3.0"
 
 [configuration]
 auto_gpr_with = true
@@ -30,8 +31,5 @@ values = [
 ]
 
 # [configuration.values]
-# cortex_m.core = "m7f"
+# cortex_m.core = "m4f"
 
-[[depends-on]]
-cortex_m = "0.5.0"
-hal = "~0.3.0"

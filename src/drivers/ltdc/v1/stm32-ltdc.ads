@@ -42,7 +42,7 @@
 
 with System;
 
---with STM32.Device;    use STM32.Device;
+with STM32.Device;    use STM32.Device;
 with HAL.Framebuffer;
 
 package STM32.LTDC is
