@@ -18,6 +18,7 @@ project Stm32_Hal is
                           "src/drivers/dma_interrupts/v1/",
                           "src/drivers/dma2d/v1/",
                           "src/drivers/fmc/v1/",
+                          "src/drivers/flash/v1/",
                           "src/drivers/device_id/v1/",
                           "src/drivers/gpio/v1/",
                           "src/drivers/ltdc/v1/",
