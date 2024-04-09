@@ -601,7 +601,11 @@ package STM32.Device is
    -- Flash --
    -----------
 
-   Flash_1 : Flash renames STM32_SVD.FLASH.FLASH_Peripheral;
+   Internal_Flash_1 : aliased Internal_Flash with
+    Volatile, Address => FLASH_Base;
+   pragma Import (Ada, Internal_Flash_1);
+
+   Flash_1 : aliased Flash_Memory (Internal_Flash_1'Access);
 
    -----------
    -- SDMMC --
