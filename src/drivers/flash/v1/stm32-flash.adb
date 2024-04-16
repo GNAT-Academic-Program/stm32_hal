@@ -46,7 +46,7 @@ package body STM32.Flash is
          return;
       end if;
 
-      --  Do erase operation for all sectors given by looping between the two points
+      -- Do erase operation for all sectors given by looping between the two points
       for i in From .. To loop
          --  Ends call in failure if there is already a flash operation
          if This.Is_Busy then
@@ -64,10 +64,11 @@ package body STM32.Flash is
          This.Periph.CR.STRT := True;
 
          --  busy waits for one sector erase to finish before doing the next or finishing the operation
-         while This.Is_Busy loop
-            delay until Ada.Real_Time.Clock + Ada.Real_Time.Microseconds (1);
+         loop
+            exit when not This.Is_Busy;
          end loop;
       end loop;
+      Success := True;
    end Erase;
 
    overriding procedure Read (This : in out Flash_Memory;
@@ -75,9 +76,16 @@ package body STM32.Flash is
       Data : out HAL.UInt8_Array;
       Success : out Boolean) is
       --  We don't need this for our project so it isn't implemented
+      Read_Loc : HAL.UInt8_Array (1 .. 4);
+      for Read_Loc'Address use System'To_Address (Offset);
    begin
-      Success := False;
-      return;
+      if This.Is_Busy then
+         Success := False;
+         return;
+      end if;
+
+      Data := Read_Loc;
+      Success := True;
    end Read;
 
    overriding procedure Write (This : in out Flash_Memory;
@@ -86,31 +94,50 @@ package body STM32.Flash is
       Success : out Boolean) is
       --  We should only be writing 32 bits at a time
       Write_Loc : HAL.UInt8_Array (1 .. 4);
+   
+      Data_To_Write : HAL.UInt8_Array(1 .. 4) := Data;
 
       --  Sets the address to the offset
       for Write_Loc'Address use System'To_Address (Offset);
    begin
       --  If there is a flash operation then the process should fail
       --  If the data sent is not 32 bits the process should fail
-      if This.Is_Busy or else Data'Size /= 4 or else This.Is_Locked then
-         Success := False;
+      Success := False;
+      if This.Is_Busy or else Data'Length /= 4 or else This.Is_Locked then
          return;
       end if;
 
       --  Become busy
-      This.Periph.SR.BSY := True;
+      --This.Periph.SR.BSY := True;
+
+      --  check error registers
+      This.Periph.SR.PGAERR := True;
+      This.Periph.SR.PGPERR := True;
+      This.Periph.SR.PGSERR := True;
+      This.Periph.SR.WRPERR := True;
+
+      -- set PSIZE to 32 bit mode
+      This.Periph.CR.PSIZE := 2#10#;
+
+      This.Periph.CR.PG := True;
 
       --  Writes 4 bytes directly to the flash
       for i in 1 .. 4 loop
-         Write_Loc (i) := Data (i);
+         Write_Loc (i) := Data_To_Write (i);
       end loop;
+      --Write_Loc := Data_To_Write;
+
+      --  check error flags
+      if This.Periph.SR.PGAERR or This.Periph.SR.PGPERR or This.Periph.SR.PGSERR or This.Periph.SR.WRPERR then
+         Success := False;
+         return;
+      end if;
 
       --  Busy waits while the BSY bit is still 1
-      while This.Is_Busy loop
-            delay until Ada.Real_Time.Clock + Ada.Real_Time.Microseconds (1);
+      loop
+         exit when not This.Is_Busy;
       end loop;
-
-      return;
+      Success := True;
    end Write;
 
    function Is_Locked (This : Flash_Memory) return Boolean is
@@ -127,7 +154,7 @@ package body STM32.Flash is
       This.Periph.KEYR := 16#4567_0123#;
 
       This.Periph.KEYR := 16#CDEF_89AB#;
-      return;
+      
    end Unlock_CR;
 
    function Get_PSIZE (This : Flash_Memory) return HAL.UInt2 is
