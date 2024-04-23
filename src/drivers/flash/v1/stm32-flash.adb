@@ -103,7 +103,9 @@ package body STM32.Flash is
       --  If there is a flash operation then the process should fail
       --  If the data sent is not 32 bits the process should fail
       Success := False;
+
       if This.Is_Busy or else Data'Length /= 4 or else This.Is_Locked then
+         Success := False;
          return;
       end if;
 
@@ -122,10 +124,10 @@ package body STM32.Flash is
       This.Periph.CR.PG := True;
 
       --  Writes 4 bytes directly to the flash
-      for i in 1 .. 4 loop
-         Write_Loc (i) := Data_To_Write (i);
-      end loop;
-      --Write_Loc := Data_To_Write;
+      --  for i in 1 .. 4 loop
+      --     Write_Loc (i) := Data_To_Write (i);
+      --  end loop;
+      Write_Loc := Data_To_Write;
 
       --  check error flags
       if This.Periph.SR.PGAERR or This.Periph.SR.PGPERR or This.Periph.SR.PGSERR or This.Periph.SR.WRPERR then
