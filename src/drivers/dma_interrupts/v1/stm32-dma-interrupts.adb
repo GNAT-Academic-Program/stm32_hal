@@ -69,6 +69,7 @@ package body STM32.DMA.Interrupts is
                          Stream => Stream,
                          Result => Result);
          No_Transfer_In_Progess := Result = DMA_No_Error;
+         Last_Status := DMA_Timeout_Error;
       end Abort_Transfer;
 
       --------------------------

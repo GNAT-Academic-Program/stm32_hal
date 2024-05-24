@@ -13,9 +13,23 @@ tags = ["embedded", "stm32", "devices", "drivers", "svd"]
 cortex_m = "0.5.0"
 hal = "~0.3.0"
 
-[configuration.variables]
-device = { type = "Enum", values = ["stm32f746", "stm32f429"], default = "stm32f429" }
+[configuration]
+auto_gpr_with = true
+disabled = false
+generate_ada = true
+generate_c = true
+generate_gpr = true
+output_dir = "config"
 
-#[configuration.values]
-#cortex_m.core = "m4f"
+[configuration.variables]
+[configuration.variables.device]
+default = "stm32f746"
+type = "Enum"
+values = [
+    "stm32f746",
+    "stm32f429",
+]
+
+# [configuration.values]
+# cortex_m.core = "m4f"
 
