@@ -2,7 +2,19 @@ with "config/stm32_hal_config.gpr";
 project Stm32_Hal is
 
    for Target use "arm-eabi";
-   for Runtime ("Ada") use "light-tasking-" & stm32_hal_config.DEVICE & "disco";
+
+   Runtime_Device := "";
+
+   case stm32_hal_config.DEVICE is
+      when "stm32f407xx" =>
+         Runtime_Device := "stm32f4";
+      when "stm32f429" =>
+         Runtime_Device := "stm32f429disco";
+      when "stm32f746" =>
+         Runtime_Device := "stm32f746disco";
+   end case;
+
+   for Runtime ("Ada") use "light-tasking-" & Runtime_Device;
 
    for Library_Name use "Stm32_Hal";
    for Library_Version use Project'Library_Name & ".so." & Stm32_Hal_Config.Crate_Version;
@@ -28,6 +40,7 @@ project Stm32_Hal is
                           "src/drivers/rng/v1/",
                           "src/drivers/sai/v1/",
                           "src/drivers/sd/v1/",
+                          "src/drivers/sd/v1/sdmmc",
                           "src/drivers/sdram/v1/",
                           "src/drivers/rtc/v1/",
                           "src/drivers/spi/v1/",
@@ -61,6 +74,32 @@ project Stm32_Hal is
                           "src/drivers/usarts/v2/",
                           "src/drivers/power_control/v2/",
                           "src/drivers/rcc/v2/");
+      when "stm32f407xx" =>
+         Drivers_Dirs := Drivers_Dirs &
+                         ("src/drivers/adc/v1/",
+                          "src/drivers/dac/v1/",
+                          "src/drivers/dma/v1/",
+                          "src/drivers/dma_interrupts/v1/",
+                          "src/drivers/device_id/v1/",
+                          "src/drivers/exti/v1/",
+                          "src/drivers/gpio/v1/",
+                          "src/drivers/i2s/v1/",
+                          "src/drivers/rng/v1/",
+                          "src/drivers/crc/v1/",
+                          "src/drivers/iwdg/v1/",
+                          "src/drivers/pwm/v1/",
+                          "src/drivers/syscfg/v1/",
+                          "src/drivers/spi/v1/",
+                          "src/drivers/rtc/v1/",
+                          "src/drivers/timers/v1/",
+                          "src/drivers/i2c/v2/",
+                          "src/drivers/usarts/v2/",
+                          "src/drivers/power_control/v2/",
+                          "src/drivers/rcc/v2/",
+                          "src/drivers/fsmc/v1/",
+                          "src/drivers/sd/v1/",
+                          "src/drivers/sd/v1/sdio");
+
    end case;
    Device_Dirs := ("src/devices/" & stm32_hal_config.DEVICE & "/");
 

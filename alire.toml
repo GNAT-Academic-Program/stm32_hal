@@ -23,13 +23,15 @@ output_dir = "config"
 
 [configuration.variables]
 [configuration.variables.device]
-default = "stm32f746"
+default = "stm32f429"
 type = "Enum"
 values = [
     "stm32f746",
     "stm32f429",
+    "stm32f407xx",
 ]
 
-# [configuration.values]
-# cortex_m.core = "m4f"
+#[configuration.values]
+#cortex_m.core = "m4f"
+#cortex_m.core = "m7f"
 
