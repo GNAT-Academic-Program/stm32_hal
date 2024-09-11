@@ -11,7 +11,7 @@ tags = ["embedded", "stm32", "devices", "drivers", "svd"]
 
 [[depends-on]]
 cortex_m = "0.5.0"
-hal = "0.3.0"
+#hal = "0.3.0"
 
 [configuration]
 auto_gpr_with = true
@@ -37,3 +37,4 @@ cortex_m.core = "m7f"
 
 [[pins]]
 gnat_arm_elf = { version='12.2.1' }
+hal = { url="https://github.com/Fabien-Chouteau/hal.git", branch="release/0.4" }
