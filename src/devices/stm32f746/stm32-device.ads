@@ -55,6 +55,7 @@ with STM32.GPIO; use STM32.GPIO;
 with STM32.USART;     use STM32.USART;
 with STM32.USART.DMA; use STM32.USART.DMA;
 with STM32.I2C;       use STM32.I2C;
+with STM32.Flash;     use STM32.Flash;
 with STM32.SDMMC;     use STM32.SDMMC;
 with STM32.SPI;       use STM32.SPI;
 with STM32.SPI.DMA;   use STM32.SPI.DMA;
@@ -595,6 +596,16 @@ package STM32.Device is
    procedure Enable_Clock (This : in out SAI_Port);
    procedure Reset (This : in out SAI_Port);
    function Get_Input_Clock (Periph : SAI_Port) return UInt32;
+
+   -----------
+   -- Flash --
+   -----------
+
+   Internal_Flash_1 : aliased Internal_Flash with
+    Volatile, Address => FLASH_Base;
+   pragma Import (Ada, Internal_Flash_1);
+
+   Flash_1 : aliased Flash_Memory (Internal_Flash_1'Access);
 
    -----------
    -- SDMMC --
