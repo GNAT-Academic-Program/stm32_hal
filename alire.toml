@@ -11,7 +11,7 @@ tags = ["embedded", "stm32", "devices", "drivers", "svd"]
 
 [[depends-on]]
 cortex_m = "0.5.0"
-hal = "~0.3.0"
+hal = "0.4.0"
 
 [configuration]
 auto_gpr_with = true
@@ -23,7 +23,7 @@ output_dir = "config"
 
 [configuration.variables]
 [configuration.variables.device]
-default = "stm32f429"
+default = "stm32f746"
 type = "Enum"
 values = [
     "stm32f746",
@@ -31,7 +31,9 @@ values = [
     "stm32f407xx",
 ]
 
-#[configuration.values]
+[configuration.values]
 #cortex_m.core = "m4f"
-#cortex_m.core = "m7f"
+cortex_m.core = "m7f"
 
+[[pins]]
+gnat_arm_elf = { version='12.2.1' }
