@@ -39,7 +39,7 @@ package body STM32.Device is
    -- HSE_VALUE : constant := ADL_Config.High_Speed_External_Clock;
    --  External oscillator in Hz
 
-   HSI_VALUE : constant := 16_000_000;
+   HSI_VALUE : constant := 8_000_000;
    --  Internal oscillator in Hz
 
    HSE_VALUE : UInt32 := HSI_VALUE;
